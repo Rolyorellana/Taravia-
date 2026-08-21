@@ -1,14 +1,23 @@
 const express = require("express");
+const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 
 app.use(express.json());
-app.use(express.static("public"));
+app.use(express.static(path.join(__dirname, "public")));
 
 const LOCATIONS = {
-  iquique: { name: "Iquique", latitude: -20.2141, longitude: -70.1524 },
-  altoHospicio: { name: "Alto Hospicio", latitude: -20.2670, longitude: -70.1030 }
+  iquique: {
+    name: "Iquique",
+    latitude: -20.2141,
+    longitude: -70.1524
+  },
+  altoHospicio: {
+    name: "Alto Hospicio",
+    latitude: -20.2670,
+    longitude: -70.1030
+  }
 };
 
 const SOURCES = [
@@ -28,17 +37,50 @@ const SOURCES = [
   },
   {
     id: "dmc",
-    name: "Dirección Meteorológica de Chile",
+    name: "Direccion Meteorologica de Chile",
     type: "meteorologia",
     url: "https://www.meteochile.gob.cl/",
     automatic: false
   },
   {
     id: "mop",
-    name: "Ministerio de Obras Públicas",
+    name: "Ministerio de Obras Publicas",
     type: "vialidad",
     url: "https://www.mop.gob.cl/",
-    automatic: false
+    automatic: true
+  }
+];
+
+const ROUTES = [
+  {
+    name: "A-16",
+    keys: ["A-16", "RUTA 16"],
+    desc: "Iquique - Alto Hospicio"
+  },
+  {
+    name: "A-1 / Ruta 1",
+    keys: ["A-1", "RUTA 1"],
+    desc: "Iquique - Aeropuerto Diego Aracena"
+  },
+  {
+    name: "Ruta 5",
+    keys: ["RUTA 5"],
+    desc: "Eje interior"
+  },
+  {
+    name: "A-504",
+    keys: ["A-504", "A504"],
+    desc: "Conexion sectorial"
+  },
+  {
+    name: "A-506",
+    keys: ["A-506", "A506"],
+    desc: "Conexion sectorial"
+  },
+  {
+    name: "A-616",
+    keys: ["A-616", "A616"],
+    desc: "Conexion Alto Hospicio"
   }
 ];
 
@@ -66,228 +108,662 @@ function cToLabel(code) {
     96: "Tormenta con granizo",
     99: "Tormenta fuerte con granizo"
   };
-  return map[code] || "Condición no especificada";
+
+  return map[code] || "Condicion no especificada";
 }
 
-function withTimeout(url, ms = 9000) {
-  return fetch(url, {
-    headers: { "User-Agent": "TARAVIA/1.4.1" },
-    signal: AbortSignal.timeout(ms)
+async function getJson(url, timeoutMs = 12000) {
+  const response = await fetch(url, {
+    headers: {
+      "User-Agent": "TARAVIA/1.4.1"
+    },
+    signal: AbortSignal.timeout(timeoutMs)
   });
+
+  if (!response.ok) {
+    throw new Error(
+      `HTTP ${response.status} ${response.statusText}`
+    );
+  }
+
+  return response.json();
 }
 
 async function getWeather(location) {
-  const url = new URL("https://api.open-meteo.com/v1/forecast");
-  url.searchParams.set("latitude", location.latitude);
-  url.searchParams.set("longitude", location.longitude);
+  const url = new URL(
+    "https://api.open-meteo.com/v1/forecast"
+  );
+
+  url.searchParams.set(
+    "latitude",
+    location.latitude
+  );
+
+  url.searchParams.set(
+    "longitude",
+    location.longitude
+  );
+
   url.searchParams.set(
     "current",
     "temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,rain,weather_code,wind_speed_10m,wind_direction_10m"
   );
-  url.searchParams.set("hourly", "precipitation_probability");
-  url.searchParams.set("forecast_days", "1");
-  url.searchParams.set("timezone", "America/Santiago");
 
-  const response = await withTimeout(url.toString());
-  if (!response.ok) throw new Error(`Open-Meteo HTTP ${response.status}`);
-  const data = await response.json();
+  url.searchParams.set(
+    "hourly",
+    "precipitation,precipitation_probability"
+  );
+
+  url.searchParams.set(
+    "forecast_days",
+    "2"
+  );
+
+  url.searchParams.set(
+    "timezone",
+    "America/Santiago"
+  );
+
+  const data = await getJson(url.toString());
 
   const current = data.current || {};
-  const probability = Array.isArray(data.hourly?.precipitation_probability)
-    ? Math.max(...data.hourly.precipitation_probability.slice(0, 6).map(Number).filter(Number.isFinite), 0)
-    : null;
+  const hourly = data.hourly || {};
+
+  const probabilities =
+    Array.isArray(hourly.precipitation_probability)
+      ? hourly.precipitation_probability
+          .slice(0, 6)
+          .map(Number)
+          .filter(Number.isFinite)
+      : [];
+
+  const precipitation =
+    Array.isArray(hourly.precipitation)
+      ? hourly.precipitation
+          .slice(0, 24)
+          .map(Number)
+          .filter(Number.isFinite)
+      : [];
+
+  const probability =
+    probabilities.length
+      ? Math.max(...probabilities)
+      : null;
+
+  const rain24 =
+    precipitation.length
+      ? precipitation.reduce(
+          (sum, value) => sum + value,
+          0
+        )
+      : Number(current.precipitation ?? 0);
 
   return {
     location: location.name,
     temperature: current.temperature_2m ?? null,
-    apparentTemperature: current.apparent_temperature ?? null,
-    humidity: current.relative_humidity_2m ?? null,
-    precipitation: current.precipitation ?? null,
-    rain: current.rain ?? null,
-    precipitationProbabilityNext6h: probability,
-    wind: current.wind_speed_10m ?? null,
-    windDirection: current.wind_direction_10m ?? null,
-    weatherCode: current.weather_code ?? null,
-    condition: cToLabel(current.weather_code),
-    observedAt: current.time || new Date().toISOString(),
+    apparentTemperature:
+      current.apparent_temperature ?? null,
+    humidity:
+      current.relative_humidity_2m ?? null,
+    precipitation:
+      current.precipitation ?? null,
+    rain:
+      current.rain ?? null,
+    rain24,
+    precipitationProbabilityNext6h:
+      probability,
+    wind:
+      current.wind_speed_10m ?? null,
+    windDirection:
+      current.wind_direction_10m ?? null,
+    weatherCode:
+      current.weather_code ?? null,
+    condition:
+      cToLabel(current.weather_code),
+    observedAt:
+      current.time ||
+      new Date().toISOString(),
     source: "Open-Meteo"
   };
 }
 
-function roadSnapshot() {
-  // This intentionally does NOT invent live road conditions.
-  // Until an official machine-readable road-status feed is connected,
-  // TARAVIA reports the routes that must be checked and links to official sources.
-  return {
-    status: "requiere_verificacion_oficial",
-    label: "Verificación oficial requerida",
-    routes: [
-      { code: "A-16", name: "Iquique – Alto Hospicio", priority: "alta" },
-      { code: "A-1 / Ruta 1", name: "Eje costero y accesos", priority: "alta" },
-      { code: "Ruta 5", name: "Conexión hacia el sur/norte", priority: "media" },
-      { code: "A-504", name: "Accesos y conexión sector Iquique", priority: "media" },
-      { code: "A-506", name: "Conexiones sectoriales", priority: "media" },
-      { code: "Aeropuerto Diego Aracena", name: "Acceso aeroportuario", priority: "media" }
-    ],
-    checkedAt: new Date().toISOString(),
-    sources: [
-      { name: "SENAPRED", url: "https://senapred.cl/" },
-      { name: "MOP", url: "https://www.mop.gob.cl/" }
-    ]
-  };
+async function getMop() {
+  const url =
+    "https://rest-sit.mop.gob.cl/arcgis/rest/services/VIALIDAD/Emergencias_Vialidad/MapServer/0/query" +
+    "?where=1%3D1&outFields=*&returnGeometry=false&f=json";
+
+  const data = await getJson(url);
+
+  return Array.isArray(data.features)
+    ? data.features.map(
+        feature => feature.attributes || {}
+      )
+    : [];
+}
+
+function clean(value) {
+  return String(value ?? "")
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function riskBand(score) {
+  if (score < 3) {
+    return ["BAJO", "green"];
+  }
+
+  if (score < 5) {
+    return ["VIGILANCIA", "yellow"];
+  }
+
+  if (score < 7) {
+    return ["VIGILANCIA ALTA", "orange"];
+  }
+
+  if (score < 9) {
+    return ["ALTO", "orange"];
+  }
+
+  return ["CRITICO", "red"];
+}
+
+function roadScore(items) {
+  if (!items.length) {
+    return 0;
+  }
+
+  let score = 4;
+
+  for (const item of items) {
+    const text = clean(
+      JSON.stringify(item)
+    );
+
+    if (
+      /NO OPERATIVO|CORTADO|CERRADO/.test(text)
+    ) {
+      score = Math.max(score, 10);
+    } else if (
+      /PARCIAL|RESTRICC|DESVIO/.test(text)
+    ) {
+      score = Math.max(score, 7);
+    }
+  }
+
+  return score;
+}
+
+function buildRoads(items) {
+  return ROUTES.map(route => {
+    const matches = items.filter(item => {
+      const text = clean(
+        Object.values(item).join(" ")
+      );
+
+      return route.keys.some(key =>
+        text.includes(clean(key))
+      );
+    });
+
+    const score = roadScore(matches);
+
+    return {
+      name: route.name,
+      desc: route.desc,
+      incidents: matches.length,
+      score,
+      status:
+        matches.length
+          ? riskBand(score)[0]
+          : "SIN REPORTE"
+    };
+  });
 }
 
 async function buildSummary() {
   const started = Date.now();
 
-  const weatherResults = await Promise.allSettled([
+  const [
+    iquiqueResult,
+    hospicioResult,
+    mopResult
+  ] = await Promise.allSettled([
     getWeather(LOCATIONS.iquique),
-    getWeather(LOCATIONS.altoHospicio)
+    getWeather(LOCATIONS.altoHospicio),
+    getMop()
   ]);
 
   const weather = {
-    iquique: weatherResults[0].status === "fulfilled"
-      ? weatherResults[0].value
-      : { error: weatherResults[0].reason?.message || "Sin respuesta" },
-    altoHospicio: weatherResults[1].status === "fulfilled"
-      ? weatherResults[1].value
-      : { error: weatherResults[1].reason?.message || "Sin respuesta" }
+    iquique:
+      iquiqueResult.status === "fulfilled"
+        ? iquiqueResult.value
+        : {
+            error:
+              iquiqueResult.reason?.message ||
+              "Sin respuesta"
+          },
+
+    altoHospicio:
+      hospicioResult.status === "fulfilled"
+        ? hospicioResult.value
+        : {
+            error:
+              hospicioResult.reason?.message ||
+              "Sin respuesta"
+          }
   };
 
-  const availableWeather = [weather.iquique, weather.altoHospicio]
-    .filter(x => x && !x.error);
+  const mopItems =
+    mopResult.status === "fulfilled"
+      ? mopResult.value
+      : [];
 
-  let risk = 2;
-  if (availableWeather.some(x => Number(x.precipitationProbabilityNext6h) >= 60)) risk = 5;
-  if (availableWeather.some(x => Number(x.wind) >= 45)) risk = Math.max(risk, 6);
-  if (availableWeather.some(x => Number(x.precipitation) >= 2)) risk = Math.max(risk, 6);
+  const weatherItems = [
+    weather.iquique,
+    weather.altoHospicio
+  ].filter(
+    item => item && !item.error
+  );
 
-  const sourceStatus = SOURCES.map(s => ({
-    ...s,
-    status: s.automatic ? (availableWeather.length ? "ok" : "error") : "consulta_oficial"
-  }));
+  let weatherRisk = 2;
+
+  if (
+    weatherItems.some(
+      item =>
+        Number(
+          item.precipitationProbabilityNext6h
+        ) >= 60
+    )
+  ) {
+    weatherRisk = 5;
+  }
+
+  if (
+    weatherItems.some(
+      item => Number(item.wind) >= 45
+    )
+  ) {
+    weatherRisk = Math.max(
+      weatherRisk,
+      6
+    );
+  }
+
+  if (
+    weatherItems.some(
+      item => Number(item.rain24) >= 5
+    )
+  ) {
+    weatherRisk = Math.max(
+      weatherRisk,
+      6
+    );
+  }
+
+  const routes =
+    buildRoads(mopItems);
+
+  const roadRisk =
+    routes.length
+      ? Math.max(
+          0,
+          ...routes.map(
+            route => route.score
+          )
+        )
+      : 0;
+
+  const overallRisk =
+    Math.round(
+      (
+        (
+          weatherRisk +
+          Math.min(roadRisk, 10)
+        ) / 2
+      ) * 10
+    ) / 10;
+
+  const sources =
+    SOURCES.map(source => ({
+      ...source,
+
+      status:
+        source.id === "openMeteo"
+          ? (
+              weatherItems.length
+                ? "ok"
+                : "error"
+            )
+
+        : source.id === "mop"
+          ? (
+              mopResult.status ===
+              "fulfilled"
+                ? "ok"
+                : "error"
+            )
+
+        : "consulta_oficial"
+    }));
 
   return {
-    app: "TARAVÍA",
+    app: "TARAVIA",
     version: "1.4.1",
-    generatedAt: new Date().toISOString(),
-    elapsedMs: Date.now() - started,
+
+    generatedAt:
+      new Date().toISOString(),
+
+    elapsedMs:
+      Date.now() - started,
+
     locations: LOCATIONS,
+
     weather,
-    road: roadSnapshot(),
-    sources: sourceStatus,
-    risk: {
-      score: risk,
-      label: risk <= 3 ? "Bajo" : risk <= 5 ? "Moderado" : risk <= 7 ? "Alto" : "Muy alto"
+
+    road: {
+      routes,
+      checkedAt:
+        new Date().toISOString()
     },
+
+    roadItems:
+      mopItems.slice(0, 30),
+
+    sources,
+
+    risk: {
+      score: overallRisk,
+      label:
+        riskBand(overallRisk)[0]
+    },
+
     recommendation:
-      risk >= 6
-        ? "Revisa SENAPRED y MOP antes de desplazarte."
-        : "Condiciones meteorológicas sin señal automática de riesgo alto; revisa vialidad oficial antes de salir."
+      overallRisk >= 7
+        ? "Revisa MOP y SENAPRED antes de desplazarte."
+        : overallRisk >= 5
+          ? "Precaucion: revisa vialidad oficial antes de salir."
+          : "No se detecta una señal automatica de riesgo alto."
   };
 }
 
-app.get("/api/health", (req, res) => {
-  res.json({
-    ok: true,
-    app: "TARAVÍA",
-    version: "1.4.1",
-    time: new Date().toISOString()
-  });
-});
-
-app.get("/api/dashboard", async (_req, res) => {
-    const s = await buildSummary();
-
-    const weatherItems = [
-      s.weather?.iquique,
-      s.weather?.altoHospicio
-    ].filter(x => x && !x.error);
-
-    let temp = null;
-    let humidity = null;
-    let wind = null;
-    let rain24 = null;
-    let probability = null;
-
-    if (weatherItems.length > 0) {
-      temp =
-        weatherItems.reduce(
-          (sum, x) => sum + Number(x.temperature ?? 0),
-          0
-        ) / weatherItems.length;
-
-      humidity =
-        weatherItems.reduce(
-          (sum, x) => sum + Number(x.humidity ?? 0),
-          0
-        ) / weatherItems.length;
-
-      wind = Math.max(
-        ...weatherItems.map(x => Number(x.wind ?? 0))
-      );
-
-      rain24 = Math.max(
-        ...weatherItems.map(x => Number(x.precipitation ?? 0))
-      );
-
-      probability = Math.max(
-        ...weatherItems.map(
-          x => Number(x.precipitationProbabilityNext6h ?? 0)
-        )
-      );
-    }
-
-    const weatherErrors = [
-      s.weather?.iquique?.error,
-      s.weather?.altoHospicio?.error
-    ].filter(Boolean);
-
+app.get(
+  "/api/health",
+  (_req, res) => {
     res.json({
-      version: s.version,
-      fetchedAt: s.generatedAt,
-
-      weather: {
-        temp,
-        humidity,
-        wind,
-        rain24,
-        probability,
-        score: s.risk?.score ?? null,
-        locations: s.weather,
-        errors: weatherErrors
-      },
-
-      mop: {
-        incidents: 0,
-        routes: s.road?.routes || [],
-        items: []
-      },
-
-      dmc: {
-        configured: false,
-        status: "Consulta oficial"
-      },
-
-      errors: weatherErrors,
-
-      risk: s.risk?.score ?? null,
-      riskBand: s.risk?.label ?? "SIN DATOS"
-    });
-
-  } catch (error) {
-    console.error("DASHBOARD_ERROR", error);
-
-    res.status(502).json({
-      ok: false,
-      error: "No se pudo completar el dashboard",
-      detail: error.message
+      ok: true,
+      app: "TARAVIA",
+      version: "1.4.1",
+      time:
+        new Date().toISOString()
     });
   }
-});
+);
 
-const PORT = process.env.PORT || 10000;
+app.get(
+  "/api/dashboard",
+  async (_req, res) => {
+    try {
+      const summary =
+        await buildSummary();
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`TARAVÍA escuchando en puerto ${PORT}`);
-});
+      const weatherItems = [
+        summary.weather?.iquique,
+        summary.weather?.altoHospicio
+      ].filter(
+        item =>
+          item &&
+          !item.error
+      );
+
+      const temp =
+        weatherItems.length
+          ? weatherItems.reduce(
+              (sum, item) =>
+                sum +
+                Number(
+                  item.temperature ?? 0
+                ),
+              0
+            ) /
+            weatherItems.length
+          : null;
+
+      const humidity =
+        weatherItems.length
+          ? weatherItems.reduce(
+              (sum, item) =>
+                sum +
+                Number(
+                  item.humidity ?? 0
+                ),
+              0
+            ) /
+            weatherItems.length
+          : null;
+
+      const wind =
+        weatherItems.length
+          ? Math.max(
+              ...weatherItems.map(
+                item =>
+                  Number(
+                    item.wind ?? 0
+                  )
+              )
+            )
+          : null;
+
+      const rain24 =
+        weatherItems.length
+          ? Math.max(
+              ...weatherItems.map(
+                item =>
+                  Number(
+                    item.rain24 ?? 0
+                  )
+              )
+            )
+          : null;
+
+      const probability =
+        weatherItems.length
+          ? Math.max(
+              ...weatherItems.map(
+                item =>
+                  Number(
+                    item.precipitationProbabilityNext6h ??
+                    0
+                  )
+              )
+            )
+          : null;
+
+      const weatherErrors = [
+        summary.weather?.iquique?.error,
+        summary.weather?.altoHospicio?.error
+      ].filter(Boolean);
+
+      const dmcConfigured =
+        Boolean(
+          process.env.DMC_USER &&
+          process.env.DMC_TOKEN
+        );
+
+      res.set(
+        "Cache-Control",
+        "no-store"
+      );
+
+      res.json({
+        version:
+          summary.version,
+
+        fetchedAt:
+          summary.generatedAt,
+
+        weather: {
+          temp,
+          humidity,
+          wind,
+          rain24,
+          probability,
+
+          score:
+            weatherItems.length
+              ? Math.max(
+                  2,
+                  ...weatherItems.map(
+                    item =>
+                      Number(
+                        item.precipitationProbabilityNext6h ??
+                        0
+                      ) >= 60
+                        ? 5
+                        : Number(
+                            item.wind ?? 0
+                          ) >= 45
+                          ? 6
+                          : Number(
+                              item.rain24 ?? 0
+                            ) >= 5
+                            ? 6
+                            : 2
+                  )
+                )
+              : null,
+
+          locations:
+            summary.weather,
+
+          errors:
+            weatherErrors
+        },
+
+        mop: {
+          incidents:
+            summary.roadItems.length,
+
+          routes:
+            summary.road.routes,
+
+          items:
+            summary.roadItems
+        },
+
+        dmc: {
+          configured:
+            dmcConfigured,
+
+          status:
+            dmcConfigured
+              ? "Configurada"
+              : "No configurada"
+        },
+
+        sources:
+          summary.sources,
+
+        errors:
+          weatherErrors.concat(
+            summary.sources.some(
+              source =>
+                source.id === "mop" &&
+                source.status === "error"
+            )
+              ? ["MOP"]
+              : []
+          ),
+
+        risk:
+          summary.risk.score,
+
+        riskBand:
+          summary.risk.label,
+
+        recommendation:
+          summary.recommendation
+      });
+
+    } catch (error) {
+      console.error(
+        "DASHBOARD_ERROR",
+        error
+      );
+
+      res.status(502).json({
+        ok: false,
+        error:
+          "No se pudo completar el dashboard",
+        detail:
+          error.message,
+        version: "1.4.1"
+      });
+    }
+  }
+);
+
+app.get(
+  "/api/summary",
+  async (_req, res) => {
+    try {
+      const summary =
+        await buildSummary();
+
+      res.set(
+        "Cache-Control",
+        "no-store"
+      );
+
+      res.json(summary);
+
+    } catch (error) {
+      console.error(
+        "SUMMARY_ERROR",
+        error
+      );
+
+      res.status(502).json({
+        ok: false,
+        error:
+          "No se pudo completar la consulta",
+        detail:
+          error.message,
+        version: "1.4.1"
+      });
+    }
+  }
+);
+
+app.get(
+  "/api/sources",
+  (_req, res) => {
+    res.json(SOURCES);
+  }
+);
+
+app.get(
+  "/{*splat}",
+  (_req, res) => {
+    res.sendFile(
+      "index.html",
+      {
+        root:
+          path.join(
+            __dirname,
+            "public"
+          )
+      }
+    );
+  }
+);
+
+app.listen(
+  PORT,
+  "0.0.0.0",
+  () => {
+    console.log(
+      `TARAVIA listening on port ${PORT}`
+    );
+  }
+);
