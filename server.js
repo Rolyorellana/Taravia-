@@ -193,8 +193,10 @@ app.get("/api/health", (req, res) => {
     app: "TARAVÍA",
     version: "1.4.1",
     time: new Date().toISOString()
-  });app.get("/api/dashboard", async (_req, res) => {
-  try {
+  });
+});
+
+app.get("/api/dashboard", async (_req, res) => {
     const s = await buildSummary();
 
     const weatherItems = [
