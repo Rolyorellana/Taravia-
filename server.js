@@ -193,9 +193,7 @@ app.get("/api/health", (req, res) => {
     app: "TARAVÍA",
     version: "1.4.1",
     time: new Date().toISOString()
-  });
-});
-app.get("/api/dashboard", async (_req, res) => {
+  });app.get("/api/dashboard", async (_req, res) => {
   try {
     const s = await buildSummary();
 
@@ -204,25 +202,44 @@ app.get("/api/dashboard", async (_req, res) => {
       s.weather?.altoHospicio
     ].filter(x => x && !x.error);
 
-    const temp = weatherItems.length
-      ? weatherItems.reduce((sum, x) => sum + Number(x.temperature || 0), 0) / weatherItems.length
-      : null;
+    let temp = null;
+    let humidity = null;
+    let wind = null;
+    let rain24 = null;
+    let probability = null;
 
-    const humidity = weatherItems.length
-      ? weatherItems.reduce((sum, x) => sum + Number(x.humidity || 0), 0) / weatherItems.length
-      : null;
+    if (weatherItems.length > 0) {
+      temp =
+        weatherItems.reduce(
+          (sum, x) => sum + Number(x.temperature ?? 0),
+          0
+        ) / weatherItems.length;
 
-    const wind = weatherItems.length
-      ? Math.max(...weatherItems.map(x => Number(x.wind || 0)))
-      : null;
+      humidity =
+        weatherItems.reduce(
+          (sum, x) => sum + Number(x.humidity ?? 0),
+          0
+        ) / weatherItems.length;
 
-    const rain24 = weatherItems.length
-      ? Math.max(...weatherItems.map(x => Number(x.precipitation || 0)))
-      : 0;
+      wind = Math.max(
+        ...weatherItems.map(x => Number(x.wind ?? 0))
+      );
 
-    const probability = weatherItems.length
-      ? Math.max(...weatherItems.map(x => Number(x.precipitationProbabilityNext6h || 0)))
-      : 0;
+      rain24 = Math.max(
+        ...weatherItems.map(x => Number(x.precipitation ?? 0))
+      );
+
+      probability = Math.max(
+        ...weatherItems.map(
+          x => Number(x.precipitationProbabilityNext6h ?? 0)
+        )
+      );
+    }
+
+    const weatherErrors = [
+      s.weather?.iquique?.error,
+      s.weather?.altoHospicio?.error
+    ].filter(Boolean);
 
     res.json({
       version: s.version,
@@ -234,7 +251,9 @@ app.get("/api/dashboard", async (_req, res) => {
         wind,
         rain24,
         probability,
-        score: s.risk?.score ?? null
+        score: s.risk?.score ?? null,
+        locations: s.weather,
+        errors: weatherErrors
       },
 
       mop: {
@@ -248,7 +267,7 @@ app.get("/api/dashboard", async (_req, res) => {
         status: "Consulta oficial"
       },
 
-      errors: [],
+      errors: weatherErrors,
 
       risk: s.risk?.score ?? null,
       riskBand: s.risk?.label ?? "SIN DATOS"
@@ -264,30 +283,4 @@ app.get("/api/dashboard", async (_req, res) => {
     });
   }
 });
-app.get("/api/summary", async (req, res) => {
-  try {
-    const summary = await buildSummary();
-    res.set("Cache-Control", "no-store");
-    res.json(summary);
-  } catch (error) {
-    console.error("SUMMARY_ERROR", error);
-    res.status(502).json({
-      ok: false,
-      error: "No se pudo completar la consulta",
-      detail: error.message,
-      version: "1.4.1"
-    });
-  }
-});
-
-app.get("/api/sources", (req, res) => {
-  res.json(SOURCES);
-});
-
-app.get("/{*splat}", (req, res) => {
-  res.sendFile("index.html", { root: "public" });
-});
-
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`TARAVÍA v1.4.1 listening on port ${PORT}`);
 });
