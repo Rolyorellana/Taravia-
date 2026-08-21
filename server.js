@@ -195,7 +195,75 @@ app.get("/api/health", (req, res) => {
     time: new Date().toISOString()
   });
 });
+app.get("/api/dashboard", async (_req, res) => {
+  try {
+    const s = await buildSummary();
 
+    const weatherItems = [
+      s.weather?.iquique,
+      s.weather?.altoHospicio
+    ].filter(x => x && !x.error);
+
+    const temp = weatherItems.length
+      ? weatherItems.reduce((sum, x) => sum + Number(x.temperature || 0), 0) / weatherItems.length
+      : null;
+
+    const humidity = weatherItems.length
+      ? weatherItems.reduce((sum, x) => sum + Number(x.humidity || 0), 0) / weatherItems.length
+      : null;
+
+    const wind = weatherItems.length
+      ? Math.max(...weatherItems.map(x => Number(x.wind || 0)))
+      : null;
+
+    const rain24 = weatherItems.length
+      ? Math.max(...weatherItems.map(x => Number(x.precipitation || 0)))
+      : 0;
+
+    const probability = weatherItems.length
+      ? Math.max(...weatherItems.map(x => Number(x.precipitationProbabilityNext6h || 0)))
+      : 0;
+
+    res.json({
+      version: s.version,
+      fetchedAt: s.generatedAt,
+
+      weather: {
+        temp,
+        humidity,
+        wind,
+        rain24,
+        probability,
+        score: s.risk?.score ?? null
+      },
+
+      mop: {
+        incidents: 0,
+        routes: s.road?.routes || [],
+        items: []
+      },
+
+      dmc: {
+        configured: false,
+        status: "Consulta oficial"
+      },
+
+      errors: [],
+
+      risk: s.risk?.score ?? null,
+      riskBand: s.risk?.label ?? "SIN DATOS"
+    });
+
+  } catch (error) {
+    console.error("DASHBOARD_ERROR", error);
+
+    res.status(502).json({
+      ok: false,
+      error: "No se pudo completar el dashboard",
+      detail: error.message
+    });
+  }
+});
 app.get("/api/summary", async (req, res) => {
   try {
     const summary = await buildSummary();
