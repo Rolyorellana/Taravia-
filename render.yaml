@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: taravia
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+  # Para automatizar los cortes 06/14/22, crea un Cron Job en Render
+  # que haga POST a https://TU-URL.onrender.com/api/snapshot.
+  # En el plan gratuito de Render, revisa las limitaciones actuales de cron jobs.
