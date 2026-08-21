@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TARAVÍA 1.4</title>
+<style>
+body{margin:0;font-family:system-ui,sans-serif;background:#eef2f5;color:#18232c}
+header{background:#15212b;color:white;padding:20px}
+main{max-width:1050px;margin:auto;padding:12px}
+.card{background:white;border-radius:17px;padding:16px;margin:10px 0;box-shadow:0 3px 15px #0001}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+.metric,.source,.route,.cut{border:1px solid #e1e6e9;border-radius:12px;padding:11px}
+.metric b{display:block;font-size:20px;margin-top:4px}
+.score{font-size:58px;font-weight:850}
+.top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.pill{display:inline-block;border-radius:99px;padding:5px 9px;font-size:11px;font-weight:800}
+.green{background:#d9f3df}.yellow{background:#fff0bf}.orange{background:#ffe0bf}.red{background:#ffd4d4}.gray{background:#e7ebee}
+.notice{padding:11px;border-radius:11px;background:#f3f6f8;margin-top:9px}
+.warn{background:#fff7df}.ok{background:#e4f5e8}
+.status{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.source b{display:block}
+.route{margin:7px 0}
+.route h3{margin:0 0 4px}
+.timeline{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.cut strong{display:block;font-size:20px;margin:4px 0}
+.sub{font-size:12px;color:#68747d}
+button{border:0;border-radius:10px;padding:10px 13px;background:#15212b;color:white;font-weight:700;margin-top:8px}
+@media(max-width:650px){.status{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+
+<body>
+
+<header>
+<div style="opacity:.7;font-size:12px;letter-spacing:.12em">
+TARAVÍA · TARAPACÁ 360
+</div>
+<h1 style="margin:4px 0">Monitoreo territorial</h1>
+<div style="opacity:.8">Clima · Vialidad · Observación · Índice Peter</div>
+</header>
+
+<main>
+
+<section class="card">
+<div class="top">
+<div>
+<b>Resumen para desplazamiento</b>
+<div class="sub">📍 Iquique · Alto Hospicio</div>
+</div>
+<div id="hora" class="sub">—</div>
+</div>
+
+<div class="top" style="align-items:center;margin:15px 0">
+<div>
+<div id="riesgo" class="score">—</div>
+<div class="sub">Riesgo de desplazamiento /10</div>
+</div>
+
+<div>
+<span id="estado" class="pill yellow">Consultando</span>
+<p id="mensaje">Cargando información…</p>
+</div>
+</div>
+
+<div class="grid">
+<div class="metric">🌦️ Clima<b id="clima">—</b></div>
+<div class="metric">🛣️ Vialidad<b id="vial">—</b></div>
+<div class="metric">📡 Fuentes<b id="fuentes">—</b></div>
+<div class="metric">🧭 Recomendación<b id="recom">—</b></div>
+</div>
+
+<div id="aviso" class="notice">
+Consultando servidor TARAVÍA…
+</div>
+
+<button onclick="actualizar()">↻ Actualizar ahora</button>
+</section>
+
+<section class="card">
+<b>📡 Estado de fuentes</b>
+
+<div class="status" style="margin-top:9px">
+
+<div class="source">
+<b>Open-Meteo</b>
+<span id="open">—</span>
+</div>
+
+<div class="source">
+<b>MOP Vialidad</b>
+<span id="mop">—</span>
+</div>
+
+<div class="source">
+<b>DMC</b>
+<span id="dmc">—</span>
+</div>
+
+<div class="source">
+<b>SENAPRED</b>
+<span>Consulta oficial</span>
+</div>
+
+</div>
+</section>
+
+<section class="card">
+<b>🕐 Cortes del día</b>
+
+<div class="timeline" style="margin-top:9px">
+
+<div class="cut">
+<b>06:00</b>
+<strong id="c06">—</strong>
+<span id="c06s" class="sub">Sin corte</span>
+</div>
+
+<div class="cut">
+<b>14:00</b>
+<strong id="c14">—</strong>
+<span id="c14s" class="sub">Sin corte</span>
+</div>
+
+<div class="cut">
+<b>22:00</b>
+<strong id="c22">—</strong>
+<span id="c22s" class="sub">Sin corte</span>
+</div>
+
+</div>
+</section>
+
+<details class="card" open>
+<summary><b>🌦️ Meteorología</b></summary>
+
+<div class="grid" style="margin-top:10px">
+
+<div class="metric">
+Temperatura
+<b id="temp">—</b>
+</div>
+
+<div class="metric">
+Humedad
+<b id="hum">—</b>
+</div>
+
+<div class="metric">
+Viento
+<b id="wind">—</b>
+</div>
+
+<div class="metric">
+Lluvia 24 h
+<b id="rain">—</b>
+</div>
+
+<div class="metric">
+Probabilidad
+<b id="prob">—</b>
+</div>
+
+<div class="metric">
+Riesgo meteorológico
+<b id="mrisk">—</b>
+</div>
+
+</div>
+</details>
+
+<details class="card">
+<summary><b>🛣️ Estado de carreteras</b></summary>
+
+<div id="rutas" style="margin-top:10px">
+Cargando…
+</div>
+
+<div id="mopmsg" class="notice">
+—
+</div>
+
+</details>
+
+<details class="card">
+<summary><b>📊 Pronóstico vs realidad</b></summary>
+
+<div class="grid" style="margin-top:10px">
+
+<div class="metric">
+DMC observado
+<b id="dtemp">—</b>
+</div>
+
+<div class="metric">
+Modelo
+<b id="modelo">—</b>
+</div>
+
+<div class="metric">
+Diferencia
+<b id="dif">—</b>
+</div>
+
+<div class="metric">
+MAE
+<b id="mae">—</b>
+</div>
+
+</div>
+
+<div id="comparacion" class="notice">
+La comparación DMC aparecerá cuando exista observación disponible.
+</div>
+
+</details>
+
+<details class="card">
+<summary><b>🧠 Índice Peter</b></summary>
+
+<div class="grid" style="margin-top:10px">
+
+<div class="metric">
+Meteorología
+<b id="pmet">—</b>
+</div>
+
+<div class="metric">
+Vialidad
+<b id="pvial">—</b>
+</div>
+
+<div class="metric">
+Índice
+<b id="pindice">—</b>
+</div>
+
+<div class="metric">
+Tendencia
+<b id="tendencia">—</b>
+</div>
+
+</div>
+
+<div id="metodologia" class="notice">
+—
+</div>
+
+</details>
+
+<details class="card">
+<summary><b>🚧 Incidencias MOP</b></summary>
+
+<div id="incidencias" style="margin-top:10px">
+—
+</div>
+
+</details>
+
+</main>
+
+<script>
+
+const $=id=>document.getElementById(id);
+
+function banda(n){
+
+if(n<3)return["BAJO","green"];
+if(n<5)return["VIGILANCIA","yellow"];
+if(n<7)return["VIGILANCIA ALTA","orange"];
+if(n<9)return["ALTO","orange"];
+
+return["CRÍTICO","red"];
+
+}
+
+async function actualizar(){
+
+$("aviso").textContent="Consultando servidor TARAVÍA…";
+
+try{
+
+const r=await fetch("/api/dashboard?"+Date.now());
+
+if(!r.ok)throw new Error("Servidor no disponible");
+
+const d=await r.json();
+
+$("hora").textContent=
+"Actualizado "+new Date(d.fetchedAt).toLocaleString("es-CL");
+
+if(d.weather){
+
+const w=d.weather;
+
+$("open").textContent="🟢 Conectado";
+
+$("temp").textContent=w.temp.toFixed(1)+" °C";
+$("modelo").textContent=w.temp.toFixed(1)+" °C";
+$("hum").textContent=w.humidity.toFixed(0)+" %";
+$("wind").textContent=w.wind.toFixed(0)+" km/h";
+$("rain").textContent=w.rain24.toFixed
