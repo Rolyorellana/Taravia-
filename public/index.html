@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TARAVÍA 1.4</title>
+<title>TARAV脥A 1.4</title>
 <style>
 body{margin:0;font-family:system-ui,sans-serif;background:#eef2f5;color:#18232c}
 header{background:#15212b;color:white;padding:20px}
@@ -29,274 +29,216 @@ button{border:0;border-radius:10px;padding:10px 13px;background:#15212b;color:wh
 @media(max-width:650px){.status{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
-
 <body>
 
 <header>
-<div style="opacity:.7;font-size:12px;letter-spacing:.12em">
-TARAVÍA · TARAPACÁ 360
-</div>
+<div style="opacity:.7;font-size:12px;letter-spacing:.12em">TARAV脥A 路 TARAPAC脕 360</div>
 <h1 style="margin:4px 0">Monitoreo territorial</h1>
-<div style="opacity:.8">Clima · Vialidad · Observación · Índice Peter</div>
+<div style="opacity:.8">Clima 路 Vialidad 路 Observaci贸n 路 脥ndice Peter</div>
 </header>
 
 <main>
-
 <section class="card">
 <div class="top">
-<div>
-<b>Resumen para desplazamiento</b>
-<div class="sub">📍 Iquique · Alto Hospicio</div>
-</div>
-<div id="hora" class="sub">—</div>
+<div><b>Resumen para desplazamiento</b><div class="sub">馃搷 Iquique 路 Alto Hospicio</div></div>
+<div id="hora" class="sub">鈥�</div>
 </div>
 
 <div class="top" style="align-items:center;margin:15px 0">
-<div>
-<div id="riesgo" class="score">—</div>
-<div class="sub">Riesgo de desplazamiento /10</div>
-</div>
-
-<div>
-<span id="estado" class="pill yellow">Consultando</span>
-<p id="mensaje">Cargando información…</p>
-</div>
+<div><div id="riesgo" class="score">鈥�</div><div class="sub">Riesgo de desplazamiento /10</div></div>
+<div><span id="estado" class="pill yellow">Consultando</span><p id="mensaje">Cargando informaci贸n鈥�</p></div>
 </div>
 
 <div class="grid">
-<div class="metric">🌦️ Clima<b id="clima">—</b></div>
-<div class="metric">🛣️ Vialidad<b id="vial">—</b></div>
-<div class="metric">📡 Fuentes<b id="fuentes">—</b></div>
-<div class="metric">🧭 Recomendación<b id="recom">—</b></div>
+<div class="metric">馃對锔� Clima<b id="clima">鈥�</b></div>
+<div class="metric">馃洠锔� Vialidad<b id="vial">鈥�</b></div>
+<div class="metric">馃摗 Fuentes<b id="fuentes">鈥�</b></div>
+<div class="metric">馃Л Recomendaci贸n<b id="recom">鈥�</b></div>
 </div>
 
-<div id="aviso" class="notice">
-Consultando servidor TARAVÍA…
-</div>
-
-<button onclick="actualizar()">↻ Actualizar ahora</button>
+<div id="aviso" class="notice">Consultando servidor TARAV脥A鈥�</div>
+<button onclick="actualizar()">鈫� Actualizar ahora</button>
 </section>
 
 <section class="card">
-<b>📡 Estado de fuentes</b>
-
+<b>馃摗 Estado de fuentes</b>
 <div class="status" style="margin-top:9px">
-
-<div class="source">
-<b>Open-Meteo</b>
-<span id="open">—</span>
-</div>
-
-<div class="source">
-<b>MOP Vialidad</b>
-<span id="mop">—</span>
-</div>
-
-<div class="source">
-<b>DMC</b>
-<span id="dmc">—</span>
-</div>
-
-<div class="source">
-<b>SENAPRED</b>
-<span>Consulta oficial</span>
-</div>
-
+<div class="source"><b>Open-Meteo</b><span id="open">鈥�</span></div>
+<div class="source"><b>MOP Vialidad</b><span id="mop">鈥�</span></div>
+<div class="source"><b>DMC</b><span id="dmc">鈥�</span></div>
+<div class="source"><b>SENAPRED</b><span>Consulta oficial</span></div>
 </div>
 </section>
 
 <section class="card">
-<b>🕐 Cortes del día</b>
-
+<b>馃晲 Cortes del d铆a</b>
 <div class="timeline" style="margin-top:9px">
-
-<div class="cut">
-<b>06:00</b>
-<strong id="c06">—</strong>
-<span id="c06s" class="sub">Sin corte</span>
-</div>
-
-<div class="cut">
-<b>14:00</b>
-<strong id="c14">—</strong>
-<span id="c14s" class="sub">Sin corte</span>
-</div>
-
-<div class="cut">
-<b>22:00</b>
-<strong id="c22">—</strong>
-<span id="c22s" class="sub">Sin corte</span>
-</div>
-
+<div class="cut"><b>06:00</b><strong id="c06">鈥�</strong><span id="c06s" class="sub">Sin corte</span></div>
+<div class="cut"><b>14:00</b><strong id="c14">鈥�</strong><span id="c14s" class="sub">Sin corte</span></div>
+<div class="cut"><b>22:00</b><strong id="c22">鈥�</strong><span id="c22s" class="sub">Sin corte</span></div>
 </div>
 </section>
 
 <details class="card" open>
-<summary><b>🌦️ Meteorología</b></summary>
-
+<summary><b>馃對锔� Meteorolog铆a</b></summary>
 <div class="grid" style="margin-top:10px">
-
-<div class="metric">
-Temperatura
-<b id="temp">—</b>
-</div>
-
-<div class="metric">
-Humedad
-<b id="hum">—</b>
-</div>
-
-<div class="metric">
-Viento
-<b id="wind">—</b>
-</div>
-
-<div class="metric">
-Lluvia 24 h
-<b id="rain">—</b>
-</div>
-
-<div class="metric">
-Probabilidad
-<b id="prob">—</b>
-</div>
-
-<div class="metric">
-Riesgo meteorológico
-<b id="mrisk">—</b>
-</div>
-
+<div class="metric">Temperatura<b id="temp">鈥�</b></div>
+<div class="metric">Humedad<b id="hum">鈥�</b></div>
+<div class="metric">Viento<b id="wind">鈥�</b></div>
+<div class="metric">Lluvia 24 h<b id="rain">鈥�</b></div>
+<div class="metric">Probabilidad<b id="prob">鈥�</b></div>
+<div class="metric">Riesgo meteorol贸gico<b id="mrisk">鈥�</b></div>
 </div>
 </details>
 
 <details class="card">
-<summary><b>🛣️ Estado de carreteras</b></summary>
-
-<div id="rutas" style="margin-top:10px">
-Cargando…
-</div>
-
-<div id="mopmsg" class="notice">
-—
-</div>
-
+<summary><b>馃洠锔� Estado de carreteras</b></summary>
+<div id="rutas" style="margin-top:10px">Cargando鈥�</div>
+<div id="mopmsg" class="notice">鈥�</div>
 </details>
 
 <details class="card">
-<summary><b>📊 Pronóstico vs realidad</b></summary>
-
+<summary><b>馃搳 Pron贸stico vs realidad</b></summary>
 <div class="grid" style="margin-top:10px">
-
-<div class="metric">
-DMC observado
-<b id="dtemp">—</b>
+<div class="metric">DMC observado<b id="dtemp">鈥�</b></div>
+<div class="metric">Modelo<b id="modelo">鈥�</b></div>
+<div class="metric">Diferencia<b id="dif">鈥�</b></div>
+<div class="metric">MAE<b id="mae">鈥�</b></div>
 </div>
-
-<div class="metric">
-Modelo
-<b id="modelo">—</b>
-</div>
-
-<div class="metric">
-Diferencia
-<b id="dif">—</b>
-</div>
-
-<div class="metric">
-MAE
-<b id="mae">—</b>
-</div>
-
-</div>
-
-<div id="comparacion" class="notice">
-La comparación DMC aparecerá cuando exista observación disponible.
-</div>
-
+<div id="comparacion" class="notice">La comparaci贸n DMC aparecer谩 cuando exista observaci贸n disponible.</div>
 </details>
 
 <details class="card">
-<summary><b>🧠 Índice Peter</b></summary>
-
+<summary><b>馃 脥ndice Peter</b></summary>
 <div class="grid" style="margin-top:10px">
-
-<div class="metric">
-Meteorología
-<b id="pmet">—</b>
+<div class="metric">Meteorolog铆a<b id="pmet">鈥�</b></div>
+<div class="metric">Vialidad<b id="pvial">鈥�</b></div>
+<div class="metric">脥ndice<b id="pindice">鈥�</b></div>
+<div class="metric">Tendencia<b id="tendencia">鈥�</b></div>
 </div>
-
-<div class="metric">
-Vialidad
-<b id="pvial">—</b>
-</div>
-
-<div class="metric">
-Índice
-<b id="pindice">—</b>
-</div>
-
-<div class="metric">
-Tendencia
-<b id="tendencia">—</b>
-</div>
-
-</div>
-
-<div id="metodologia" class="notice">
-—
-</div>
-
+<div id="metodologia" class="notice">鈥�</div>
 </details>
 
 <details class="card">
-<summary><b>🚧 Incidencias MOP</b></summary>
-
-<div id="incidencias" style="margin-top:10px">
-—
-</div>
-
+<summary><b>馃毀 Incidencias MOP</b></summary>
+<div id="incidencias" style="margin-top:10px">鈥�</div>
 </details>
-
 </main>
 
 <script>
-
 const $=id=>document.getElementById(id);
 
 function banda(n){
+  if(n<3)return["BAJO","green"];
+  if(n<5)return["VIGILANCIA","yellow"];
+  if(n<7)return["VIGILANCIA ALTA","orange"];
+  if(n<9)return["ALTO","orange"];
+  return["CR脥TICO","red"];
+}
 
-if(n<3)return["BAJO","green"];
-if(n<5)return["VIGILANCIA","yellow"];
-if(n<7)return["VIGILANCIA ALTA","orange"];
-if(n<9)return["ALTO","orange"];
+function setPill(el,text,cls){
+  el.textContent=text;
+  el.className="pill "+cls;
+}
 
-return["CRÍTICO","red"];
-
+function fmt(v,d=1){
+  return Number.isFinite(Number(v)) ? Number(v).toFixed(d) : "鈥�";
 }
 
 async function actualizar(){
+  $("aviso").textContent="Consultando servidor TARAV脥A鈥�";
+  setPill($("estado"),"Consultando","yellow");
 
-$("aviso").textContent="Consultando servidor TARAVÍA…";
+  try{
+    const r=await fetch("/api/dashboard?"+Date.now(),{cache:"no-store"});
+    if(!r.ok) throw new Error("Servidor no disponible");
+    const d=await r.json();
 
-try{
+    $("hora").textContent="Actualizado "+new Date(d.fetchedAt).toLocaleString("es-CL");
 
-const r=await fetch("/api/dashboard?"+Date.now());
+    if(d.weather){
+      const w=d.weather;
+      $("open").textContent="馃煝 Conectado";
+      $("temp").textContent=fmt(w.temp)+" 掳C";
+      $("modelo").textContent=fmt(w.temp)+" 掳C";
+      $("hum").textContent=fmt(w.humidity,0)+" %";
+      $("wind").textContent=fmt(w.wind,0)+" km/h";
+      $("rain").textContent=fmt(w.rain24)+" mm";
+      $("prob").textContent=fmt(w.probability,0)+" %";
+      $("clima").textContent=fmt(w.temp)+" 掳C 路 "+fmt(w.probability,0)+"% lluvia";
+      $("mrisk").textContent=fmt(w.score,0)+"/10";
+      $("pmet").textContent=fmt(w.score,0)+"/10";
+    }else{
+      $("open").textContent="馃敶 Error";
+    }
 
-if(!r.ok)throw new Error("Servidor no disponible");
+    if(d.mop){
+      $("mop").textContent="馃煝 "+d.mop.incidents+" incidencias";
+      $("vial").textContent=d.mop.incidents+" reporte(s)";
+      $("pvial").textContent=fmt(Math.max(0,...d.mop.routes.map(x=>x.score)),0)+"/10";
 
-const d=await r.json();
+      $("rutas").innerHTML=d.mop.routes.map(x=>{
+        const b=banda(x.score);
+        return `<div class="route"><h3>${x.name}</h3><div class="sub">${x.desc}</div><span class="pill ${b[1]}">${x.status}</span> 路 ${x.incidents} incidencia(s)</div>`;
+      }).join("");
 
-$("hora").textContent=
-"Actualizado "+new Date(d.fetchedAt).toLocaleString("es-CL");
+      $("mopmsg").textContent=d.mop.incidents
+        ? "Se encontraron reportes en la fuente MOP. Revisa cada ruta antes de desplazarte."
+        : "Sin incidencias devueltas por la fuente MOP.";
 
-if(d.weather){
+      $("incidencias").innerHTML=d.mop.items?.length
+        ? d.mop.items.map(x=>`<div class="notice">${JSON.stringify(x)}</div>`).join("")
+        : "Sin incidencias.";
+    }else{
+      $("mop").textContent="馃敶 Error";
+      $("vial").textContent="No disponible";
+    }
 
-const w=d.weather;
+    if(d.dmc){
+      $("dmc").textContent=d.dmc.configured
+        ? (d.dmc.status==="Conectada"?"馃煝 Conectada":"馃煛 "+d.dmc.status)
+        : "鈿� No configurada";
+      if(d.dmc.temperature!=null){
+        $("dtemp").textContent=fmt(d.dmc.temperature)+" 掳C";
+        const dif=Number(wTemp(d.weather))-Number(d.dmc.temperature);
+        $("dif").textContent=Number.isFinite(dif)?fmt(Math.abs(dif))+" 掳C":"鈥�";
+        $("comparacion").textContent="Comparaci贸n entre el modelo y la observaci贸n DMC disponible.";
+      }
+    }
 
-$("open").textContent="🟢 Conectado";
+    const risk=d.risk;
+    if(risk!=null){
+      const b=banda(risk);
+      $("riesgo").textContent=fmt(risk,1);
+      setPill($("estado"),d.riskBand||b[0],b[1]);
+      $("pindice").textContent=fmt(risk,1)+"/10";
+      $("recom").textContent=risk>=7?"Revisar antes de salir":"Precauci贸n normal";
+      $("mensaje").textContent=risk>=7
+        ?"Hay se帽ales relevantes de riesgo. Verifica las fuentes oficiales antes de desplazarte."
+        :"No se detecta una se帽al autom谩tica de riesgo alto.";
+      $("metodologia").textContent="脥ndice Peter: combinaci贸n del riesgo meteorol贸gico y el mayor nivel de incidencia vial detectado.";
+    }
 
-$("temp").textContent=w.temp.toFixed(1)+" °C";
-$("modelo").textContent=w.temp.toFixed(1)+" °C";
-$("hum").textContent=w.humidity.toFixed(0)+" %";
-$("wind").textContent=w.wind.toFixed(0)+" km/h";
-$("rain").textContent=w.rain24.toFixed
+    $("fuentes").textContent=(d.errors?.length||0)
+      ? `${4-(d.errors.length||0)}/4 disponibles`
+      : "4/4 consultadas";
+
+    $("aviso").textContent=d.errors?.length
+      ? "Consulta completada con fuentes no disponibles: "+d.errors.join(", ")
+      : "TARAV脥A actualizado correctamente.";
+
+    $("tendencia").textContent="Actual";
+  }catch(e){
+    setPill($("estado"),"Error","red");
+    $("aviso").textContent="No se pudo consultar TARAV脥A: "+e.message;
+  }
+}
+
+function wTemp(weather){
+  return weather?.temp;
+}
+
+actualizar();
+</script>
+</body>
+</html>
