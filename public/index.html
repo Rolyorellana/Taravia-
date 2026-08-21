@@ -3,249 +3,1061 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TARAVIA 1.4</title>
+<title>TARAVÍA 1.5.2</title>
+
 <style>
-body{margin:0;font-family:Arial,sans-serif;background:#eef2f5;color:#18232c}
-header{background:#15212b;color:white;padding:20px}
-main{max-width:1050px;margin:auto;padding:12px}
-.card{background:white;border-radius:17px;padding:16px;margin:10px 0;box-shadow:0 3px 15px #0001}
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
-.metric,.source,.route,.cut{border:1px solid #e1e6e9;border-radius:12px;padding:11px}
-.metric b{display:block;font-size:20px;margin-top:4px}
-.score{font-size:58px;font-weight:850}
-.top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
-.pill{display:inline-block;border-radius:99px;padding:5px 9px;font-size:11px;font-weight:800}
-.green{background:#d9f3df}.yellow{background:#fff0bf}.orange{background:#ffe0bf}.red{background:#ffd4d4}.gray{background:#e7ebee}
-.notice{padding:11px;border-radius:11px;background:#f3f6f8;margin-top:9px}
-.status{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.source b{display:block}
-.route{margin:7px 0}
-.route h3{margin:0 0 4px}
-.timeline{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.cut strong{display:block;font-size:20px;margin:4px 0}
-.sub{font-size:12px;color:#68747d}
-button{border:0;border-radius:10px;padding:10px 13px;background:#15212b;color:white;font-weight:700;margin-top:8px}
-@media(max-width:650px){.status{grid-template-columns:repeat(2,1fr)}}
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#eef2f5;
+  color:#18232c
+}
+
+header{
+  background:#15212b;
+  color:white;
+  padding:20px
+}
+
+main{
+  max-width:1050px;
+  margin:auto;
+  padding:12px
+}
+
+.card{
+  background:white;
+  border-radius:17px;
+  padding:16px;
+  margin:10px 0;
+  box-shadow:0 3px 15px #0001
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:9px
+}
+
+.metric,
+.source,
+.route,
+.cut{
+  border:1px solid #e1e6e9;
+  border-radius:12px;
+  padding:11px
+}
+
+.metric b{
+  display:block;
+  font-size:20px;
+  margin-top:4px
+}
+
+.score{
+  font-size:58px;
+  font-weight:850
+}
+
+.top{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap
+}
+
+.pill{
+  display:inline-block;
+  border-radius:99px;
+  padding:5px 9px;
+  font-size:11px;
+  font-weight:800
+}
+
+.green{background:#d9f3df}
+.yellow{background:#fff0bf}
+.orange{background:#ffe0bf}
+.red{background:#ffd4d4}
+.gray{background:#e7ebee}
+
+.notice{
+  padding:11px;
+  border-radius:11px;
+  background:#f3f6f8;
+  margin-top:9px
+}
+
+.status{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px
+}
+
+.source b{
+  display:block
+}
+
+.route{
+  margin:7px 0
+}
+
+.route h3{
+  margin:0 0 4px
+}
+
+.timeline{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px
+}
+
+.cut strong{
+  display:block;
+  font-size:20px;
+  margin:4px 0
+}
+
+.sub{
+  font-size:12px;
+  color:#68747d
+}
+
+button{
+  border:0;
+  border-radius:10px;
+  padding:10px 13px;
+  background:#15212b;
+  color:white;
+  font-weight:700;
+  margin-top:8px
+}
+
+button:active{
+  transform:scale(.98)
+}
+
+.ok{
+  color:#16803c;
+  font-weight:700
+}
+
+.err{
+  color:#b42318;
+  font-weight:700
+}
+
+.warn{
+  color:#a15c00;
+  font-weight:700
+}
+
+@media(max-width:650px){
+  .status{
+    grid-template-columns:repeat(2,1fr)
+  }
+}
 </style>
 </head>
+
 <body>
 
 <header>
-<div style="opacity:.7;font-size:12px;letter-spacing:.12em">TARAVIA - TARAPACA 360</div>
-<h1 style="margin:4px 0">Monitoreo territorial</h1>
-<div style="opacity:.8">Clima - Vialidad - Observacion - Indice Peter</div>
+  <div style="opacity:.7;font-size:12px;letter-spacing:.12em">
+    TARAVÍA - TARAPACA 360
+  </div>
+
+  <h1 style="margin:4px 0">
+    Monitoreo territorial
+  </h1>
+
+  <div style="opacity:.8">
+    Clima - Vialidad - Observación - Índice Peter
+  </div>
 </header>
 
 <main>
-<section class="card">
-<div class="top">
-<div>
-<b>Resumen para desplazamiento</b>
-<div class="sub">Iquique - Alto Hospicio</div>
-</div>
-<div id="hora" class="sub">--</div>
-</div>
 
-<div class="top" style="align-items:center;margin:15px 0">
-<div>
-<div id="riesgo" class="score">--</div>
-<div class="sub">Riesgo de desplazamiento /10</div>
-</div>
-<div>
-<span id="estado" class="pill yellow">Consultando</span>
-<p id="mensaje">Cargando informacion...</p>
-</div>
-</div>
-
-<div class="grid">
-<div class="metric">Clima<b id="clima">--</b></div>
-<div class="metric">Vialidad<b id="vial">--</b></div>
-<div class="metric">Fuentes<b id="fuentes">--</b></div>
-<div class="metric">Recomendacion<b id="recom">--</b></div>
-</div>
-
-<div id="aviso" class="notice">Consultando servidor TARAVIA...</div>
-<button onclick="actualizar()">Actualizar ahora</button>
-</section>
+<!-- =====================================================
+     RESUMEN
+     ===================================================== -->
 
 <section class="card">
-<b>Estado de fuentes</b>
-<div class="status" style="margin-top:9px">
-<div class="source"><b>Open-Meteo</b><span id="open">--</span></div>
-<div class="source"><b>MOP Vialidad</b><span id="mop">--</span></div>
-<div class="source"><b>DMC</b><span id="dmc">--</span></div>
-<div class="source"><b>SENAPRED</b><span>Consulta oficial</span></div>
-</div>
+
+  <div class="top">
+
+    <div>
+      <b>Resumen para desplazamiento</b>
+      <div class="sub">
+        Iquique - Alto Hospicio
+      </div>
+    </div>
+
+    <div id="hora" class="sub">
+      --
+    </div>
+
+  </div>
+
+
+  <div class="top"
+       style="align-items:center;margin:15px 0">
+
+    <div>
+
+      <div id="riesgo" class="score">
+        --
+      </div>
+
+      <div class="sub">
+        Riesgo de desplazamiento /10
+      </div>
+
+    </div>
+
+
+    <div>
+
+      <span id="estado"
+            class="pill yellow">
+        Consultando
+      </span>
+
+      <p id="mensaje">
+        Cargando información...
+      </p>
+
+    </div>
+
+  </div>
+
+
+  <div class="grid">
+
+    <div class="metric">
+      Clima
+      <b id="clima">--</b>
+    </div>
+
+    <div class="metric">
+      Vialidad
+      <b id="vial">--</b>
+    </div>
+
+    <div class="metric">
+      Fuentes
+      <b id="fuentes">--</b>
+    </div>
+
+    <div class="metric">
+      Recomendación
+      <b id="recom">--</b>
+    </div>
+
+  </div>
+
+
+  <div id="aviso"
+       class="notice">
+    Consultando servidor TARAVÍA...
+  </div>
+
+
+  <button onclick="actualizar()">
+    Actualizar ahora
+  </button>
+
 </section>
 
+
+<!-- =====================================================
+     ESTADO DE FUENTES
+     ===================================================== -->
+
 <section class="card">
-<b>Cortes del dia</b>
-<div class="timeline" style="margin-top:9px">
-<div class="cut"><b>06:00</b><strong id="c06">--</strong><span id="c06s" class="sub">Sin corte</span></div>
-<div class="cut"><b>14:00</b><strong id="c14">--</strong><span id="c14s" class="sub">Sin corte</span></div>
-<div class="cut"><b>22:00</b><strong id="c22">--</strong><span id="c22s" class="sub">Sin corte</span></div>
-</div>
+
+  <b>Estado de fuentes</b>
+
+  <div class="status"
+       style="margin-top:9px">
+
+    <div class="source">
+      <b>Open-Meteo</b>
+      <span id="open">--</span>
+    </div>
+
+    <div class="source">
+      <b>MET Norway</b>
+      <span id="metnorway">--</span>
+    </div>
+
+    <div class="source">
+      <b>MOP Vialidad</b>
+      <span id="mop">--</span>
+    </div>
+
+    <div class="source">
+      <b>SENAPRED</b>
+      <span id="senapred">
+        Consulta oficial
+      </span>
+    </div>
+
+  </div>
+
 </section>
+
+
+<!-- =====================================================
+     CORTES DEL DÍA
+     ===================================================== -->
+
+<section class="card">
+
+  <b>Cortes del día</b>
+
+  <div class="timeline"
+       style="margin-top:9px">
+
+    <div class="cut">
+      <b>06:00</b>
+      <strong id="c06">--</strong>
+      <span id="c06s"
+            class="sub">
+        Sin corte
+      </span>
+    </div>
+
+    <div class="cut">
+      <b>14:00</b>
+      <strong id="c14">--</strong>
+      <span id="c14s"
+            class="sub">
+        Sin corte
+      </span>
+    </div>
+
+    <div class="cut">
+      <b>22:00</b>
+      <strong id="c22">--</strong>
+      <span id="c22s"
+            class="sub">
+        Sin corte
+      </span>
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- =====================================================
+     METEOROLOGÍA
+     ===================================================== -->
 
 <details class="card" open>
-<summary><b>Meteorologia</b></summary>
-<div class="grid" style="margin-top:10px">
-<div class="metric">Temperatura<b id="temp">--</b></div>
-<div class="metric">Humedad<b id="hum">--</b></div>
-<div class="metric">Viento<b id="wind">--</b></div>
-<div class="metric">Lluvia 24 h<b id="rain">--</b></div>
-<div class="metric">Probabilidad<b id="prob">--</b></div>
-<div class="metric">Riesgo meteorologico<b id="mrisk">--</b></div>
-</div>
+
+  <summary>
+    <b>Meteorología</b>
+  </summary>
+
+  <div class="grid"
+       style="margin-top:10px">
+
+    <div class="metric">
+      Temperatura
+      <b id="temp">--</b>
+    </div>
+
+    <div class="metric">
+      Humedad
+      <b id="hum">--</b>
+    </div>
+
+    <div class="metric">
+      Viento
+      <b id="wind">--</b>
+    </div>
+
+    <div class="metric">
+      Lluvia
+      <b id="rain">--</b>
+    </div>
+
+    <div class="metric">
+      Probabilidad
+      <b id="prob">--</b>
+    </div>
+
+    <div class="metric">
+      Riesgo meteorológico
+      <b id="mrisk">--</b>
+    </div>
+
+  </div>
+
+  <div id="ubicaciones"
+       class="notice">
+    --
+  </div>
+
 </details>
 
-<details class="card">
-<summary><b>Estado de carreteras</b></summary>
-<div id="rutas" style="margin-top:10px">Cargando...</div>
-<div id="mopmsg" class="notice">--</div>
-</details>
+
+<!-- =====================================================
+     ESTADO DE CARRETERAS
+     ===================================================== -->
 
 <details class="card">
-<summary><b>Pronostico vs realidad</b></summary>
-<div class="grid" style="margin-top:10px">
-<div class="metric">DMC observado<b id="dtemp">--</b></div>
-<div class="metric">Modelo<b id="modelo">--</b></div>
-<div class="metric">Diferencia<b id="dif">--</b></div>
-<div class="metric">MAE<b id="mae">--</b></div>
-</div>
-<div id="comparacion" class="notice">La comparacion DMC aparecera cuando exista observacion disponible.</div>
+
+  <summary>
+    <b>Estado de carreteras</b>
+  </summary>
+
+  <div id="rutas"
+       style="margin-top:10px">
+    Cargando...
+  </div>
+
+  <div id="mopmsg"
+       class="notice">
+    --
+  </div>
+
 </details>
 
-<details class="card">
-<summary><b>Indice Peter</b></summary>
-<div class="grid" style="margin-top:10px">
-<div class="metric">Meteorologia<b id="pmet">--</b></div>
-<div class="metric">Vialidad<b id="pvial">--</b></div>
-<div class="metric">Indice<b id="pindice">--</b></div>
-<div class="metric">Tendencia<b id="tendencia">--</b></div>
-</div>
-<div id="metodologia" class="notice">--</div>
-</details>
+
+<!-- =====================================================
+     PRONÓSTICO VS REALIDAD
+     ===================================================== -->
 
 <details class="card">
-<summary><b>Incidencias MOP</b></summary>
-<div id="incidencias" style="margin-top:10px">--</div>
+
+  <summary>
+    <b>Pronóstico vs realidad</b>
+  </summary>
+
+  <div class="grid"
+       style="margin-top:10px">
+
+    <div class="metric">
+      DMC observado
+      <b id="dtemp">--</b>
+    </div>
+
+    <div class="metric">
+      Modelo
+      <b id="modelo">--</b>
+    </div>
+
+    <div class="metric">
+      Diferencia
+      <b id="dif">--</b>
+    </div>
+
+    <div class="metric">
+      MAE
+      <b id="mae">--</b>
+    </div>
+
+  </div>
+
+  <div id="comparacion"
+       class="notice">
+    La comparación DMC aparecerá cuando exista
+    observación disponible.
+  </div>
+
 </details>
+
+
+<!-- =====================================================
+     ÍNDICE PETER
+     ===================================================== -->
+
+<details class="card">
+
+  <summary>
+    <b>Índice Peter</b>
+  </summary>
+
+  <div class="grid"
+       style="margin-top:10px">
+
+    <div class="metric">
+      Meteorología
+      <b id="pmet">--</b>
+    </div>
+
+    <div class="metric">
+      Vialidad
+      <b id="pvial">--</b>
+    </div>
+
+    <div class="metric">
+      Índice
+      <b id="pindice">--</b>
+    </div>
+
+    <div class="metric">
+      Tendencia
+      <b id="tendencia">--</b>
+    </div>
+
+  </div>
+
+  <div id="metodologia"
+       class="notice">
+    --
+  </div>
+
+</details>
+
+
+<!-- =====================================================
+     INCIDENCIAS MOP
+     ===================================================== -->
+
+<details class="card">
+
+  <summary>
+    <b>Incidencias MOP</b>
+  </summary>
+
+  <div id="incidencias"
+       style="margin-top:10px">
+    --
+  </div>
+
+</details>
+
 </main>
 
+
 <script>
-const $=id=>document.getElementById(id);
+
+/* =====================================================
+   UTILIDADES
+   ===================================================== */
+
+const $ = id =>
+  document.getElementById(id);
+
+
+/*
+   IMPORTANTE:
+   Esta función NO convierte null en 0.
+   Así evitamos mostrar:
+   "0.0 C"
+   cuando realmente no tenemos datos.
+*/
+
+function fmt(value, decimals = 1){
+
+  if(
+    value === null ||
+    value === undefined ||
+    value === "" ||
+    !Number.isFinite(Number(value))
+  ){
+    return "--";
+  }
+
+  return Number(value).toFixed(decimals);
+}
+
 
 function banda(n){
-  if(n<3)return["BAJO","green"];
-  if(n<5)return["VIGILANCIA","yellow"];
-  if(n<7)return["VIGILANCIA ALTA","orange"];
-  if(n<9)return["ALTO","orange"];
-  return["CRITICO","red"];
+
+  if(
+    n === null ||
+    n === undefined ||
+    !Number.isFinite(Number(n))
+  ){
+    return [
+      "SIN DATOS",
+      "gray"
+    ];
+  }
+
+  n = Number(n);
+
+  if(n < 3)
+    return ["BAJO","green"];
+
+  if(n < 5)
+    return ["VIGILANCIA","yellow"];
+
+  if(n < 7)
+    return ["VIGILANCIA ALTA","orange"];
+
+  if(n < 9)
+    return ["ALTO","orange"];
+
+  return ["CRÍTICO","red"];
 }
 
-function setPill(el,text,cls){
-  el.textContent=text;
-  el.className="pill "+cls;
+
+function setPill(
+  element,
+  text,
+  cls
+){
+
+  element.textContent = text;
+
+  element.className =
+    "pill " + cls;
 }
 
-function fmt(v,d=1){
-  return Number.isFinite(Number(v)) ? Number(v).toFixed(d) : "--";
-}
 
-async function actualizar(){
-  $("aviso").textContent="Consultando servidor TARAVIA...";
-  setPill($("estado"),"Consultando","yellow");
+/*
+   Estado de una fuente.
+*/
 
-  try{
-    const r=await fetch("/api/dashboard?"+Date.now(),{cache:"no-store"});
-    if(!r.ok)throw new Error("Servidor no disponible");
-    const d=await r.json();
+function fuenteEstado(
+  id,
+  status
+){
 
-    $("hora").textContent="Actualizado "+new Date(d.fetchedAt).toLocaleString("es-CL");
+  const el = $(id);
 
-    if(d.weather){
-      const w=d.weather;
-      $("open").textContent="Conectado";
-      $("temp").textContent=fmt(w.temp)+" C";
-      $("modelo").textContent=fmt(w.temp)+" C";
-      $("hum").textContent=fmt(w.humidity,0)+" %";
-      $("wind").textContent=fmt(w.wind,0)+" km/h";
-      $("rain").textContent=fmt(w.rain24)+" mm";
-      $("prob").textContent=fmt(w.probability,0)+" %";
-      $("clima").textContent=fmt(w.temp)+" C - "+fmt(w.probability,0)+"% lluvia";
-      $("mrisk").textContent=fmt(w.score,0)+"/10";
-      $("pmet").textContent=fmt(w.score,0)+"/10";
-    }else{
-      $("open").textContent="Error";
-    }
+  if(!el) return;
 
-    if(d.mop){
-      $("mop").textContent=d.mop.incidents+" incidencias";
-      $("vial").textContent=d.mop.incidents+" reporte(s)";
-      $("pvial").textContent=fmt(Math.max(0,...d.mop.routes.map(x=>x.score)),0)+"/10";
+  if(status === "ok"){
 
-      $("rutas").innerHTML=d.mop.routes.map(x=>{
-        const b=banda(x.score);
-        return '<div class="route"><h3>'+x.name+'</h3><div class="sub">'+x.desc+'</div><span class="pill '+b[1]+'">'+x.status+'</span> - '+x.incidents+' incidencia(s)</div>';
-      }).join("");
+    el.textContent = "Conectada";
+    el.className = "ok";
 
-      $("mopmsg").textContent=d.mop.incidents
-        ?"Se encontraron reportes en la fuente MOP. Revisa cada ruta antes de desplazarte."
-        :"Sin incidencias devueltas por la fuente MOP.";
+  }else if(status === "error"){
 
-      $("incidencias").innerHTML=d.mop.items?.length
-        ?d.mop.items.map(x=>'<div class="notice">'+JSON.stringify(x)+'</div>').join("")
-        :"Sin incidencias.";
-    }else{
-      $("mop").textContent="Error";
-      $("vial").textContent="No disponible";
-    }
+    el.textContent = "Error";
+    el.className = "err";
 
-    if(d.dmc){
-      $("dmc").textContent=d.dmc.configured
-        ?(d.dmc.status==="Conectada"?"Conectada":d.dmc.status)
-        :"No configurada";
+  }else{
 
-      if(d.dmc.temperature!=null){
-        $("dtemp").textContent=fmt(d.dmc.temperature)+" C";
-        if(d.weather&&d.weather.temp!=null){
-          const dif=Number(d.weather.temp)-Number(d.dmc.temperature);
-          $("dif").textContent=fmt(Math.abs(dif))+" C";
-          $("comparacion").textContent="Comparacion entre el modelo y la observacion DMC disponible.";
-        }
-      }
-    }
-
-    const risk=d.risk;
-    if(risk!=null){
-      const b=banda(risk);
-      $("riesgo").textContent=fmt(risk,1);
-      setPill($("estado"),d.riskBand||b[0],b[1]);
-      $("pindice").textContent=fmt(risk,1)+"/10";
-      $("recom").textContent=risk>=7?"Revisar antes de salir":"Precaucion normal";
-      $("mensaje").textContent=risk>=7
-        ?"Hay senales relevantes de riesgo. Verifica las fuentes oficiales antes de desplazarte."
-        :"No se detecta una senal automatica de riesgo alto.";
-      $("metodologia").textContent="Indice Peter: combinacion del riesgo meteorologico y el mayor nivel de incidencia vial detectado.";
-    }
-
-    $("fuentes").textContent=(d.errors?.length||0)
-      ?(4-(d.errors.length||0))+"/4 disponibles"
-      :"4/4 consultadas";
-
-    $("aviso").textContent=d.errors?.length
-      ?"Consulta completada con fuentes no disponibles: "+d.errors.join(", ")
-      :"TARAVIA actualizado correctamente.";
-
-    $("tendencia").textContent="Actual";
-  }catch(e){
-    setPill($("estado"),"Error","red");
-    $("aviso").textContent="No se pudo consultar TARAVIA: "+e.message;
+    el.textContent = "Consulta oficial";
+    el.className = "warn";
   }
 }
 
-actualizar();
-</script>
-</body>
-</html>
+
+/* =====================================================
+   ACTUALIZACIÓN PRINCIPAL
+   ===================================================== */
+
+async function actualizar(){
+
+  $("aviso").textContent =
+    "Consultando servidor TARAVÍA...";
+
+  setPill(
+    $("estado"),
+    "Consultando",
+    "yellow"
+  );
+
+
+  try{
+
+    const response =
+      await fetch(
+        "/api/dashboard?" + Date.now(),
+        {
+          cache:"no-store"
+        }
+      );
+
+
+    if(!response.ok){
+
+      throw new Error(
+        "Servidor no disponible (" +
+        response.status +
+        ")"
+      );
+    }
+
+
+    const data =
+      await response.json();
+
+
+    /* =================================================
+       HORA
+       ================================================= */
+
+    if(data.fetchedAt){
+
+      $("hora").textContent =
+        "Actualizado " +
+        new Date(
+          data.fetchedAt
+        ).toLocaleString(
+          "es-CL"
+        );
+    }
+
+
+    /* =================================================
+       FUENTES
+       ================================================= */
+
+    if(data.sources?.items){
+
+      data.sources.items.forEach(
+        source => {
+
+          if(source.id === "openMeteo"){
+
+            fuenteEstado(
+              "open",
+              source.status
+            );
+
+          }
+
+          if(source.id === "metNorway"){
+
+            fuenteEstado(
+              "metnorway",
+              source.status
+            );
+
+          }
+
+          if(source.id === "mop"){
+
+            fuenteEstado(
+              "mop",
+              source.status
+            );
+
+          }
+
+          if(source.id === "senapred"){
+
+            fuenteEstado(
+              "senapred",
+              source.status
+            );
+
+          }
+
+        }
+      );
+
+
+      $("fuentes").textContent =
+        (
+          data.sources.available ??
+          0
+        ) +
+        "/" +
+        (
+          data.sources.total ??
+          0
+        ) +
+        " disponibles";
+    }
+
+
+    /* =================================================
+       CLIMA
+       ================================================= */
+
+    const weather =
+      data.weather;
+
+
+    if(
+      weather &&
+      weather.temp !== null &&
+      weather.temp !== undefined
+    ){
+
+      $("temp").textContent =
+        fmt(weather.temp) +
+        " °C";
+
+
+      $("modelo").textContent =
+        fmt(weather.temp) +
+        " °C";
+
+
+      $("hum").textContent =
+        fmt(
+          weather.humidity,
+          0
+        ) +
+        " %";
+
+
+      $("wind").textContent =
+        fmt(
+          weather.wind,
+          0
+        ) +
+        " km/h";
+
+
+      $("rain").textContent =
+        fmt(
+          weather.rain24
+        ) +
+        " mm";
+
+
+      $("prob").textContent =
+        fmt(
+          weather.probability,
+          0
+        ) +
+        " %";
+
+
+      $("clima").textContent =
+        fmt(weather.temp) +
+        " °C - " +
+        fmt(
+          weather.probability,
+          0
+        ) +
+        "% lluvia";
+
+
+      $("mrisk").textContent =
+        fmt(
+          weather.score,
+          0
+        ) +
+        "/10";
+
+
+      $("pmet").textContent =
+        fmt(
+          weather.score,
+          0
+        ) +
+        "/10";
+
+
+      $("open").textContent =
+        "Conectada";
+
+    }else{
+
+      $("temp").textContent =
+        "Sin datos";
+
+      $("hum").textContent =
+        "Sin datos";
+
+      $("wind").textContent =
+        "Sin datos";
+
+      $("rain").textContent =
+        "Sin datos";
+
+      $("prob").textContent =
+        "Sin datos";
+
+      $("clima").textContent =
+        "Sin datos meteorológicos";
+
+      $("mrisk").textContent =
+        "Sin datos";
+
+      $("pmet").textContent =
+        "Sin datos";
+
+    }
+
+
+    /* =================================================
+       UBICACIONES METEOROLÓGICAS
+       ================================================= */
+
+    if(weather?.locations){
+
+      const locations =
+        weather.locations;
+
+
+      const lista = [];
+
+
+      if(locations.iquique){
+
+        const w =
+          locations.iquique;
+
+        if(w.error){
+
+          lista.push(
+            "Iquique: " +
+            w.error
+          );
+
+        }else{
+
+          lista.push(
+            "Iquique: " +
+            fmt(w.temperature) +
+            " °C, " +
+            (w.condition || "sin condición") +
+            ", viento " +
+            fmt(w.wind,0) +
+            " km/h"
+          );
+
+        }
+      }
+
+
+      if(locations.altoHospicio){
+
+        const w =
+          locations.altoHospicio;
+
+        if(w.error){
+
+          lista.push(
+            "Alto Hospicio: " +
+            w.error
+          );
+
+        }else{
+
+          lista.push(
+            "Alto Hospicio: " +
+            fmt(w.temperature) +
+            " °C, " +
+            (w.condition || "sin condición") +
+            ", viento " +
+            fmt(w.wind,0) +
+            " km/h"
+          );
+
+        }
+      }
+
+
+      if(lista.length){
+
+        $("ubicaciones").innerHTML =
+          "<b>Datos por ubicación</b><br>" +
+          lista.join("<br>");
+
+      }
+
+    }
+
+
+    /* =================================================
+       VIALIDAD
+       ================================================= */
+
+    if(data.mop){
+
+      const routes =
+        Array.isArray(
+          data.mop.routes
+        )
+          ? data.mop.routes
+          : [];
+
+
+      /*
+         IMPORTANTE:
+         El servidor actual NO entrega
+         accidentes/incidencias reales.
+         Por eso no inventamos números.
+      */
+
+      $("vial").textContent =
+        data.mop.incidents !== undefined
+          ? data.mop.incidents +
+            " reporte(s)"
+          : "Verificación oficial";
+
+
+      $("pvial").textContent =
+        "Pendiente";
+
+
+      if(routes.length){
+
+        $("rutas").innerHTML =
+          routes.map(
+            route => {
+
+              const priority =
+                route.priority ||
+                "media";
+
+
+              const cls =
+                priority === "alta"
+                  ? "orange"
+                  : "yellow";
+
+
+              return `
+                <div class="route">
+
+                  <h3>
+                    ${route.code || ""}
+                    ${route.name || "Ruta"}
+                  </h3>
+
+                  <div class="sub">
+                    Prioridad:
+                    ${priority}
+                  </div>
+
+                  <span class="pill ${cls}">
+                    ${route.status ||
+                      "Verificación oficial requerida"}
+                  </span>
+
+                </div>
+              `;
+
+            }
+          ).join("");
+
+      }else{
+
+        $("rutas").innerHTML =
+          "No hay rutas disponibles.";
+
+      }
+
+
+      $("mopmsg").textContent =
+        data.mop.status ||
+        "Verificación oficial requerida";
+
+
+      if(
+        Array.isArray(
+          data.mop.items
+        ) &&
+        data.mop.items.length
+      ){
+
+        $("incidencias").innerHTML =
+          data.mop.items
+            .map(
+              item =>
+                '<div class="notice">' +
+                JSON.stringify(item) +
+                '</div>'
+            )
+            .join("");
+
+      }else{
+
+        $("incidencias").textContent =
+          "No hay incidencias M
