@@ -216,7 +216,7 @@ app.get("/api/sources", (req, res) => {
   res.json(SOURCES);
 });
 
-app.get("*", (req, res) => {
+app.get("/{*splat}", (req, res) => {
   res.sendFile("index.html", { root: "public" });
 });
 
