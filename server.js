@@ -1,26 +1,71 @@
 const express = require("express");
-const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static("public"));
+
+/* =========================================================
+   TARAVÍA 1.5.2
+   Servidor principal
+   ========================================================= */
 
 const LOCATIONS = {
-  iquique: { name: "Iquique", latitude: -20.2141, longitude: -70.1524 },
-  altoHospicio: { name: "Alto Hospicio", latitude: -20.2670, longitude: -70.1030 }
+  iquique: {
+    name: "Iquique",
+    latitude: -20.2141,
+    longitude: -70.1524
+  },
+  altoHospicio: {
+    name: "Alto Hospicio",
+    latitude: -20.2670,
+    longitude: -70.1030
+  }
 };
 
-const CACHE_TIME = 5 * 60 * 1000;
-const FAILURE_COOLDOWN = 10 * 60 * 1000;
+const SOURCES = [
+  {
+    id: "openMeteo",
+    name: "Open-Meteo",
+    type: "clima",
+    automatic: true
+  },
+  {
+    id: "metNorway",
+    name: "MET Norway",
+    type: "clima",
+    automatic: true
+  },
+  {
+    id: "mop",
+    name: "MOP Vialidad",
+    type: "vialidad",
+    automatic: false
+  },
+  {
+    id: "senapred",
+    name: "SENAPRED",
+    type: "alertas",
+    automatic: false
+  }
+];
 
-let weatherCache = null;
-let weatherCacheTime = 0;
-let openMeteoBlockedUntil = 0;
+/* =========================================================
+   CACHÉ
+   Evita golpear Open-Meteo repetidamente y recibir HTTP 429.
+   ========================================================= */
 
-function weatherLabel(code) {
-  const labels = {
+const weatherCache = new Map();
+
+const CACHE_TIME = 10 * 60 * 1000;
+
+/* =========================================================
+   UTILIDADES
+   ========================================================= */
+
+function cToLabel(code) {
+  const map = {
     0: "Despejado",
     1: "Mayormente despejado",
     2: "Parcialmente nublado",
@@ -44,120 +89,162 @@ function weatherLabel(code) {
     99: "Tormenta fuerte con granizo"
   };
 
-  return labels[code] || "Condición no especificada";
+  return map[code] || "Condición no especificada";
 }
 
+async function fetchWithTimeout(url, options = {}, timeout = 9000) {
+  return fetch(url, {
+    ...options,
+    signal: AbortSignal.timeout(timeout)
+  });
+}
+
+/* =========================================================
+   OPEN-METEO
+   ========================================================= */
+
 async function getOpenMeteo(location) {
-  const url = new URL("https://api.open-meteo.com/v1/forecast");
+  const cacheKey = `openmeteo-${location.name}`;
+  const cached = weatherCache.get(cacheKey);
+
+  if (cached && Date.now() - cached.time < CACHE_TIME) {
+    return {
+      ...cached.data,
+      cached: true
+    };
+  }
+
+  const url = new URL(
+    "https://api.open-meteo.com/v1/forecast"
+  );
 
   url.searchParams.set("latitude", location.latitude);
   url.searchParams.set("longitude", location.longitude);
 
   url.searchParams.set(
     "current",
-    "temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,rain,weather_code,wind_speed_10m,wind_direction_10m"
+    [
+      "temperature_2m",
+      "relative_humidity_2m",
+      "apparent_temperature",
+      "precipitation",
+      "rain",
+      "weather_code",
+      "wind_speed_10m",
+      "wind_direction_10m"
+    ].join(",")
   );
 
   url.searchParams.set(
     "hourly",
-    "precipitation,precipitation_probability"
+    "precipitation_probability"
   );
 
-  url.searchParams.set("forecast_days", "2");
-  url.searchParams.set("timezone", "America/Santiago");
-
-  const response = await fetch(url.toString(), {
-    headers: {
-      "User-Agent":
-        "TARAVIA/1.5 https://github.com/Rolyorellana/Taravia-"
-    },
-    signal: AbortSignal.timeout(12000)
-  });
-
-  if (!response.ok) {
-    throw new Error(`Open-Meteo HTTP ${response.status}`);
-  }
-
-  const data = await response.json();
-
-  const current = data.current || {};
-  const hourly = data.hourly || {};
-
-  const probs = Array.isArray(
-    hourly.precipitation_probability
-  )
-    ? hourly.precipitation_probability
-        .slice(0, 6)
-        .map(Number)
-        .filter(Number.isFinite)
-    : [];
-
-  const precipitation = Array.isArray(
-    hourly.precipitation
-  )
-    ? hourly.precipitation
-        .slice(0, 24)
-        .map(Number)
-        .filter(Number.isFinite)
-    : [];
-
-  return {
-    location: location.name,
-    temperature: current.temperature_2m ?? null,
-    apparentTemperature:
-      current.apparent_temperature ?? null,
-    humidity:
-      current.relative_humidity_2m ?? null,
-    precipitation:
-      current.precipitation ?? null,
-    rain:
-      current.rain ?? null,
-    rain24: precipitation.length
-      ? precipitation.reduce(
-          (a, b) => a + b,
-          0
-        )
-      : Number(current.precipitation || 0),
-    precipitationProbabilityNext6h:
-      probs.length ? Math.max(...probs) : null,
-    wind:
-      current.wind_speed_10m ?? null,
-    windDirection:
-      current.wind_direction_10m ?? null,
-    weatherCode:
-      current.weather_code ?? null,
-    condition:
-      weatherLabel(current.weather_code),
-    observedAt:
-      current.time ||
-      new Date().toISOString(),
-    source: "Open-Meteo"
-  };
-}
-
-async function getMetNorway(location) {
-  const url = new URL(
-    "https://api.met.no/weatherapi/locationforecast/2.0/compact"
-  );
-
+  url.searchParams.set("forecast_days", "1");
   url.searchParams.set(
-    "lat",
-    location.latitude.toFixed(4)
+    "timezone",
+    "America/Santiago"
   );
 
-  url.searchParams.set(
-    "lon",
-    location.longitude.toFixed(4)
-  );
-
-  const response = await fetch(
+  const response = await fetchWithTimeout(
     url.toString(),
     {
       headers: {
+        "User-Agent": "TARAVIA/1.5.2"
+      }
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `Open-Meteo HTTP ${response.status}`
+    );
+  }
+
+  const data = await response.json();
+  const current = data.current || {};
+
+  const probabilities =
+    Array.isArray(
+      data.hourly?.precipitation_probability
+    )
+      ? data.hourly.precipitation_probability
+          .slice(0, 6)
+          .map(Number)
+          .filter(Number.isFinite)
+      : [];
+
+  const probability =
+    probabilities.length > 0
+      ? Math.max(...probabilities)
+      : 0;
+
+  const result = {
+    location: location.name,
+    temperature:
+      current.temperature_2m ?? null,
+
+    apparentTemperature:
+      current.apparent_temperature ?? null,
+
+    humidity:
+      current.relative_humidity_2m ?? null,
+
+    precipitation:
+      current.precipitation ?? null,
+
+    rain:
+      current.rain ?? null,
+
+    precipitationProbabilityNext6h:
+      probability,
+
+    wind:
+      current.wind_speed_10m ?? null,
+
+    windDirection:
+      current.wind_direction_10m ?? null,
+
+    weatherCode:
+      current.weather_code ?? null,
+
+    condition:
+      cToLabel(current.weather_code),
+
+    observedAt:
+      current.time ||
+      new Date().toISOString(),
+
+    source: "Open-Meteo",
+
+    cached: false
+  };
+
+  weatherCache.set(cacheKey, {
+    time: Date.now(),
+    data: result
+  });
+
+  return result;
+}
+
+/* =========================================================
+   RESPALDO MET NORWAY
+   ========================================================= */
+
+async function getMetNorway(location) {
+  const url =
+    `https://api.met.no/weatherapi/locationforecast/2.0/compact` +
+    `?lat=${location.latitude}` +
+    `&lon=${location.longitude}`;
+
+  const response = await fetchWithTimeout(
+    url,
+    {
+      headers: {
         "User-Agent":
-          "TARAVIA/1.5 https://github.com/Rolyorellana/Taravia-"
-      },
-      signal: AbortSignal.timeout(12000)
+          "TARAVIA/1.5.2 contacto-taravia@example.com"
+      }
     }
   );
 
@@ -169,490 +256,552 @@ async function getMetNorway(location) {
 
   const data = await response.json();
 
-  const series =
-    data?.properties?.timeseries || [];
+  const first =
+    data.properties?.timeseries?.[0];
 
-  if (!series.length) {
+  if (!first) {
     throw new Error(
       "MET Norway sin datos"
     );
   }
 
-  const now = Date.now();
-
-  const closest = series.reduce(
-    (best, item) => {
-      const distance = Math.abs(
-        new Date(item.time).getTime() -
-          now
-      );
-
-      if (!best) {
-        return {
-          item,
-          distance
-        };
-      }
-
-      return distance < best.distance
-        ? {
-            item,
-            distance
-          }
-        : best;
-    },
-    null
-  );
-
-  const first =
-    closest?.item || series[0];
-
   const details =
-    first?.data?.instant?.details ||
-    {};
+    first.data?.instant?.details || {};
 
-  const next1 =
-    first?.data?.next_1_hours?.details ||
-    {};
+  const nextHours =
+    data.properties?.timeseries?.slice(0, 6) || [];
 
-  const next6 =
-    first?.data?.next_6_hours?.details ||
-    {};
-
-  const precipitation =
-    next1.precipitation_amount ??
-    next6.precipitation_amount ??
-    0;
+  const probabilities = nextHours
+    .map(
+      item =>
+        Number(
+          item.data?.next_1_hours
+            ?.details
+            ?.probability_of_precipitation
+        )
+    )
+    .filter(Number.isFinite);
 
   const probability =
-    next1.probability_of_precipitation ??
-    next6.probability_of_precipitation ??
-    0;
-
-  const symbol =
-    first?.data?.next_1_hours
-      ?.summary?.symbol_code ||
-    first?.data?.next_6_hours
-      ?.summary?.symbol_code ||
-    "";
+    probabilities.length
+      ? Math.max(...probabilities)
+      : 0;
 
   return {
     location: location.name,
 
     temperature:
-      details.air_temperature ??
-      null,
+      details.air_temperature ?? null,
 
-    apparentTemperature:
-      null,
+    apparentTemperature: null,
 
     humidity:
-      details.relative_humidity ??
-      null,
+      details.relative_humidity ?? null,
 
-    precipitation,
+    precipitation:
+      first.data?.next_1_hours
+        ?.details
+        ?.precipitation_amount ?? 0,
 
-    rain: precipitation,
-
-    rain24: precipitation,
+    rain:
+      first.data?.next_1_hours
+        ?.details
+        ?.precipitation_amount ?? 0,
 
     precipitationProbabilityNext6h:
       probability,
 
     wind:
-      details.wind_speed != null
-        ? Number(details.wind_speed) * 3.6
-        : null,
+      details.wind_speed ?? null,
 
     windDirection:
-      details.wind_from_direction ??
-      null,
+      details.wind_from_direction ?? null,
 
-    weatherCode:
-      null,
+    weatherCode: null,
 
     condition:
-      symbol ||
-      "Pronóstico MET Norway",
+      "Datos meteorológicos alternativos",
 
     observedAt:
       first.time ||
       new Date().toISOString(),
 
-    source: "MET Norway"
-  };
-}
+    source: "MET Norway",
 
-async function fetchWeatherLocation(
-  location
-) {
-  const now = Date.now();
-
-  if (
-    now >= openMeteoBlockedUntil
-  ) {
-    try {
-      return await getOpenMeteo(
-        location
-      );
-    } catch (error) {
-      if (
-        String(error.message).includes(
-          "HTTP 429"
-        )
-      ) {
-        openMeteoBlockedUntil =
-          now + FAILURE_COOLDOWN;
-
-        console.warn(
-          "OPEN_METEO_429: usando MET Norway durante 10 minutos"
-        );
-      } else {
-        console.warn(
-          `OPEN_METEO_ERROR: ${error.message}`
-        );
-      }
-    }
-  }
-
-  return getMetNorway(location);
-}
-
-async function getWeatherData() {
-  const now = Date.now();
-
-  if (
-    weatherCache &&
-    now - weatherCacheTime <
-      CACHE_TIME
-  ) {
-    return {
-      ...weatherCache,
-      cached: true
-    };
-  }
-
-  const results =
-    await Promise.allSettled([
-      fetchWeatherLocation(
-        LOCATIONS.iquique
-      ),
-      fetchWeatherLocation(
-        LOCATIONS.altoHospicio
-      )
-    ]);
-
-  const iquique =
-    results[0].status ===
-    "fulfilled"
-      ? results[0].value
-      : {
-          error:
-            results[0].reason
-              ?.message ||
-            "Sin respuesta"
-        };
-
-  const altoHospicio =
-    results[1].status ===
-    "fulfilled"
-      ? results[1].value
-      : {
-          error:
-            results[1].reason
-              ?.message ||
-            "Sin respuesta"
-        };
-
-  const data = {
-    iquique,
-    altoHospicio,
-    fetchedAt:
-      new Date().toISOString(),
     cached: false
   };
-
-  if (
-    !iquique.error ||
-    !altoHospicio.error
-  ) {
-    weatherCache = data;
-    weatherCacheTime = now;
-  }
-
-  return data;
 }
 
-function calculateRisk(weather) {
-  const items = [
-    weather.iquique,
-    weather.altoHospicio
-  ].filter(
-    x => x && !x.error
-  );
+/* =========================================================
+   OBTENER CLIMA CON RESPALDO
+   ========================================================= */
 
-  if (!items.length) {
+async function getWeather(location) {
+  try {
+    return await getOpenMeteo(location);
+  } catch (openError) {
+    console.warn(
+      `[TARAVÍA] Open-Meteo falló para ${location.name}:`,
+      openError.message
+    );
+  }
+
+  try {
+    return await getMetNorway(location);
+  } catch (metError) {
+    console.warn(
+      `[TARAVÍA] MET Norway falló para ${location.name}:`,
+      metError.message
+    );
+  }
+
+  const cached =
+    weatherCache.get(
+      `openmeteo-${location.name}`
+    );
+
+  if (cached) {
     return {
-      score: null,
-      label: "SIN DATOS"
+      ...cached.data,
+      cached: true,
+      source: "Open-Meteo (caché)"
     };
   }
 
-  let score = 2;
+  throw new Error(
+    `No hay datos meteorológicos disponibles para ${location.name}`
+  );
+}
+
+/* =========================================================
+   VIALIDAD
+   No inventamos cortes ni accidentes.
+   ========================================================= */
+
+function roadSnapshot() {
+  return {
+    status: "requiere_verificacion_oficial",
+
+    label:
+      "Verificación oficial requerida",
+
+    routes: [
+      {
+        code: "A-16",
+        name: "Iquique – Alto Hospicio",
+        priority: "alta",
+        status: "Verificación oficial requerida"
+      },
+      {
+        code: "A-1 / Ruta 1",
+        name: "Eje costero y accesos",
+        priority: "alta",
+        status: "Verificación oficial requerida"
+      },
+      {
+        code: "Ruta 5",
+        name: "Conexión norte/sur",
+        priority: "media",
+        status: "Verificación oficial requerida"
+      },
+      {
+        code: "A-504",
+        name: "Accesos sector Iquique",
+        priority: "media",
+        status: "Verificación oficial requerida"
+      },
+      {
+        code: "A-506",
+        name: "Conexiones sectoriales",
+        priority: "media",
+        status: "Verificación oficial requerida"
+      }
+    ],
+
+    checkedAt:
+      new Date().toISOString(),
+
+    sources: [
+      {
+        name: "SENAPRED",
+        url: "https://senapred.cl/"
+      },
+      {
+        name: "MOP",
+        url: "https://www.mop.gob.cl/"
+      }
+    ]
+  };
+}
+
+/* =========================================================
+   RIESGO
+   ========================================================= */
+
+function calculateRisk(weatherItems) {
+  let risk = 2;
 
   if (
-    items.some(
+    weatherItems.some(
       x =>
         Number(
           x.precipitationProbabilityNext6h
         ) >= 60
     )
   ) {
-    score = 5;
+    risk = Math.max(risk, 5);
   }
 
   if (
-    items.some(
+    weatherItems.some(
       x => Number(x.wind) >= 45
     )
   ) {
-    score = Math.max(
-      score,
-      6
-    );
+    risk = Math.max(risk, 6);
   }
 
   if (
-    items.some(
-      x => Number(x.rain24) >= 5
+    weatherItems.some(
+      x => Number(x.precipitation) >= 2
     )
   ) {
-    score = Math.max(
-      score,
-      6
-    );
+    risk = Math.max(risk, 6);
+  }
+
+  if (
+    weatherItems.some(
+      x =>
+        typeof x.weatherCode === "number" &&
+        [95, 96, 99].includes(
+          x.weatherCode
+        )
+    )
+  ) {
+    risk = Math.max(risk, 8);
   }
 
   let label = "Bajo";
 
-  if (score >= 9) {
-    label = "Crítico";
-  } else if (score >= 7) {
+  if (risk >= 8) {
+    label = "Muy alto";
+  } else if (risk >= 6) {
     label = "Alto";
-  } else if (score >= 5) {
-    label = "Vigilancia alta";
-  } else if (score >= 3) {
-    label = "Vigilancia";
+  } else if (risk >= 4) {
+    label = "Moderado";
   }
 
   return {
-    score,
+    score: risk,
     label
   };
 }
 
-function getRoutes() {
-  return [
-    {
-      code: "A-16",
-      name: "Iquique – Alto Hospicio",
-      priority: "alta",
-      status:
-        "Verificación oficial requerida"
-    },
-    {
-      code: "A-1 / Ruta 1",
-      name: "Eje costero y accesos",
-      priority: "alta",
-      status:
-        "Verificación oficial requerida"
-    },
-    {
-      code: "Ruta 5",
-      name: "Conexión norte/sur",
-      priority: "media",
-      status:
-        "Verificación oficial requerida"
-    },
-    {
-      code: "A-504",
-      name: "Accesos sector Iquique",
-      priority: "media",
-      status:
-        "Verificación oficial requerida"
-    },
-    {
-      code: "A-506",
-      name: "Conexiones sectoriales",
-      priority: "media",
-      status:
-        "Verificación oficial requerida"
-    }
-  ];
-}
+/* =========================================================
+   RESUMEN GENERAL
+   ========================================================= */
 
-async function buildDashboard() {
-  const weather =
-    await getWeatherData();
+async function buildSummary() {
+  const started = Date.now();
 
-  const risk =
-    calculateRisk(weather);
+  const results =
+    await Promise.allSettled([
+      getWeather(LOCATIONS.iquique),
+      getWeather(LOCATIONS.altoHospicio)
+    ]);
 
-  const weatherItems = [
+  const weather = {
+    iquique:
+      results[0].status === "fulfilled"
+        ? results[0].value
+        : {
+            error:
+              results[0].reason?.message ||
+              "Sin respuesta"
+          },
+
+    altoHospicio:
+      results[1].status === "fulfilled"
+        ? results[1].value
+        : {
+            error:
+              results[1].reason?.message ||
+              "Sin respuesta"
+          }
+  };
+
+  const availableWeather = [
     weather.iquique,
     weather.altoHospicio
   ].filter(
     x => x && !x.error
   );
 
-  const errors = [];
+  const risk =
+    calculateRisk(
+      availableWeather
+    );
 
-  if (!weatherItems.length) {
-    errors.push("Clima");
-  }
+  const weatherErrors = [
+    weather.iquique?.error,
+    weather.altoHospicio?.error
+  ].filter(Boolean);
 
-  const temp =
-    weatherItems.length
-      ? weatherItems.reduce(
-          (sum, x) =>
-            sum +
-            Number(
-              x.temperature || 0
-            ),
-          0
-        ) / weatherItems.length
-      : null;
+  const sourceStatus =
+    SOURCES.map(source => ({
+      ...source,
 
-  const humidity =
-    weatherItems.length
-      ? weatherItems.reduce(
-          (sum, x) =>
-            sum +
-            Number(
-              x.humidity || 0
-            ),
-          0
-        ) / weatherItems.length
-      : null;
-
-  const wind =
-    weatherItems.length
-      ? Math.max(
-          ...weatherItems.map(
-            x =>
-              Number(
-                x.wind || 0
-              )
-          )
-        )
-      : null;
-
-  const rain24 =
-    weatherItems.length
-      ? Math.max(
-          ...weatherItems.map(
-            x =>
-              Number(
-                x.rain24 || 0
-              )
-          )
-        )
-      : null;
-
-  const probability =
-    weatherItems.length
-      ? Math.max(
-          ...weatherItems.map(
-            x =>
-              Number(
-                x.precipitationProbabilityNext6h ||
-                  0
-              )
-          )
-        )
-      : null;
-
-  let recommendation =
-    "No se detecta una señal automática de riesgo alto.";
-
-  if (risk.score === null) {
-    recommendation =
-      "Datos meteorológicos no disponibles.";
-  } else if (
-    risk.score >= 7
-  ) {
-    recommendation =
-      "Revisa SENAPRED y MOP antes de desplazarte.";
-  } else if (
-    risk.score >= 5
-  ) {
-    recommendation =
-      "Precaución. Revisa las condiciones de la ruta antes de salir.";
-  }
-
-  return {
-    version: "1.6.0",
-
-    fetchedAt:
-      new Date().toISOString(),
-
-    weather: {
-      temp,
-      humidity,
-      wind,
-      rain24,
-      probability,
-      score: risk.score,
-      locations: weather,
-      errors
-    },
-
-    mop: {
-      incidents: 0,
-      routes: getRoutes(),
-      items: []
-    },
-
-    dmc: {
-      configured: false,
-      status: "Consulta oficial"
-    },
-
-    sources: [
-      {
-        id: "openMeteo",
-        name: "Open-Meteo",
-        status:
-          openMeteoBlockedUntil >
-          Date.now()
-            ? "limitada; usando respaldo"
-            : weatherItems.length
+      status:
+        source.automatic
+          ? availableWeather.length > 0
             ? "ok"
             : "error"
-      },
+          : "consulta_oficial"
+    }));
 
-      {
-        id: "metNorway",
-        name: "MET Norway",
-        status:
+  return {
+    app: "TARAVÍA",
+
+    version: "1.5.2",
+
+    generatedAt:
+      new Date().toISOString(),
+
+    elapsedMs:
+      Date.now() - started,
+
+    weather,
+
+    road:
+      roadSnapshot(),
+
+    sources:
+      sourceStatus,
+
+    risk,
+
+    recommendation:
+      risk.score >= 6
+        ? "Precaución: revisa SENAPRED y MOP antes de desplazarte."
+        : "Precaución normal. Revisa vialidad oficial antes de salir.",
+
+    errors:
+      weatherErrors
+  };
+}
+
+/* =========================================================
+   HEALTH CHECK
+   ========================================================= */
+
+app.get(
+  "/api/health",
+  (_req, res) => {
+    res.json({
+      ok: true,
+      app: "TARAVÍA",
+      version: "1.5.2",
+      time:
+        new Date().toISOString()
+    });
+  }
+);
+
+/* =========================================================
+   DASHBOARD API
+   ========================================================= */
+
+app.get(
+  "/api/dashboard",
+  async (_req, res) => {
+    try {
+      const summary =
+        await buildSummary();
+
+      const weatherItems = [
+        summary.weather?.iquique,
+        summary.weather?.altoHospicio
+      ].filter(
+        x => x && !x.error
+      );
+
+      let temp = null;
+      let humidity = null;
+      let wind = null;
+      let rain24 = null;
+      let probability = null;
+
+      if (weatherItems.length > 0) {
+        temp =
+          weatherItems.reduce(
+            (sum, x) =>
+              sum +
+              Number(
+                x.temperature ?? 0
+              ),
+            0
+          ) /
+          weatherItems.length;
+
+        humidity =
+          weatherItems.reduce(
+            (sum, x) =>
+              sum +
+              Number(
+                x.humidity ?? 0
+              ),
+            0
+          ) /
+          weatherItems.length;
+
+        wind =
+          Math.max(
+            ...weatherItems.map(
+              x =>
+                Number(
+                  x.wind ?? 0
+                )
+            )
+          );
+
+        rain24 =
+          Math.max(
+            ...weatherItems.map(
+              x =>
+                Number(
+                  x.precipitation ?? 0
+                )
+            )
+          );
+
+        probability =
+          Math.max(
+            ...weatherItems.map(
+              x =>
+                Number(
+                  x.precipitationProbabilityNext6h ??
+                  0
+                )
+            )
+          );
+      }
+
+      const availableSources =
+        summary.sources.filter(
+          x =>
+            x.status === "ok"
+        ).length;
+
+      res.json({
+        ok: true,
+
+        version:
+          summary.version,
+
+        fetchedAt:
+          summary.generatedAt,
+
+        weather: {
+          temp,
+          humidity,
+          wind,
+          rain24,
+          probability,
+
+          score:
+            summary.risk?.score ??
+            null,
+
+          locations:
+            summary.weather,
+
+          errors:
+            summary.errors
+        },
+
+        mop: {
+          incidents: 0,
+
+          routes:
+            summary.road?.routes ||
+            [],
+
+          items: [],
+
+          status:
+            "Verificación oficial requerida"
+        },
+
+        dmc: {
+          configured: false,
+          status:
+            "Consulta oficial"
+        },
+
+        senapred: {
+          configured: false,
+          status:
+            "Consulta oficial"
+        },
+
+        sources: {
+          available:
+            availableSources,
+
+          total:
+            SOURCES.length,
+
+          items:
+            summary.sources
+        },
+
+        errors:
+          summary.errors,
+
+        risk:
+          summary.risk?.score ??
+          null,
+
+        riskBand:
+          summary.risk?.label ??
+          "SIN DATOS",
+
+        recommendation:
+          summary.recommendation,
+
+        cached:
           weatherItems.some(
-            x =>
-              x.source ===
-              "MET Norway"
+            x => x.cached === true
           )
-            ? "ok"
-            : "respaldo"
-      },
+      });
+    } catch (error) {
+      console.error(
+        "DASHBOARD_ERROR",
+        error
+      );
 
-      {
-        id: "mop",
-        name: "MOP Vialidad",
-        status:
-          "consulta_oficial"
-      },
+      res.status(502).json({
+        ok: false,
 
-      {
-        id: "dmc",
-        name: "DMC",
-        status:
-          "consulta_oficial"
+        error:
+          "No se pudo completar el dashboard",
+
+        detail:
+          error.message
+      });
+    }
+  }
+);
+
+/* =========================================================
+   INICIO DEL SERVIDOR
+   ========================================================= */
+
+app.listen(
+  PORT,
+  "0.0.0.0",
+  () => {
+    console.log(
+      `TARAVÍA escuchando en puerto ${PORT}`
+    );
+  }
+);
